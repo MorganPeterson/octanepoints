@@ -14,7 +14,8 @@ type Rally struct {
 	ID               uint64    `gorm:"primaryKey;autoIncrement"` // Add an ID field for GORM
 	RallyId          uint64    `gorm:"not null;uniqueIndex"`     // Use uint64 for RallyId
 	Name             string    `gorm:"size:255;not null"`        // Name of the rally
-	Description      string    `gorm:"size:255;not null"`        // Description of the rally
+	Description      string    `gorm:"not null"`                 // Description of the rally
+	Creator          string    `gorm:"size:255;not null"`        // Creator of the rally
 	DamageLevel      string    `gorm:"size:255;not null"`        // Damage level of the rally
 	NumberOfLegs     int64     `gorm:"not null"`                 // Number of legs in the rally
 	SuperRally       bool      `gorm:"not null"`                 // Whether the rally is a super rally
@@ -22,7 +23,7 @@ type Rally struct {
 	Started          int64     `gorm:"not null"`                 // Start time of the rally in Unix timestamp
 	Finished         int64     `gorm:"not null"`                 // Finish time of the rally in Unix timestamp
 	TotalDistance    float64   `gorm:"not null"`                 // Total distance of the rally in kilometers
-	CarGroups        string    `gorm:"size:255;not null"`        // Car groups allowed in the rally
+	CarGroups        string    `gorm:"not null"`                 // Car groups allowed in the rally
 	StartAt          time.Time `gorm:"not null"`                 // Start time of the rally
 	EndAt            time.Time `gorm:"not null"`                 // End time of the rally
 }
@@ -31,7 +32,7 @@ type Rally struct {
 type RallyOverall struct {
 	ID          uint64        `gorm:"primaryKey;autoIncrement"` // Add an ID field for GORM
 	RallyId     uint64        `gorm:"not null"`                 // Use uint64 for RallyId
-	UserId      uint64        `gorm:"not null;uniqueIndex"`     // Use uint64 for UserId
+	UserId      uint64        `gorm:"not null"`                 // Use uint64 for UserId
 	Position    string        `gorm:"size:255;not null"`
 	UserName    string        `gorm:"size:255;not null"`
 	RealName    string        `gorm:"size:255;not null"`
@@ -47,7 +48,7 @@ type RallyStage struct {
 	RallyId        uint64    `gorm:"not null"`
 	StageNum       int64     `gorm:"not null"`          // Stage number in the rally
 	StageName      string    `gorm:"size:255;not null"` // Name of the stage
-	Nationality    string    `gorm:"size:255;not null"` //
+	Nationality    string    `gorm:"size:255;not null"` // Drivers nationality
 	UserName       string    `gorm:"size:255;not null"` // Username of the participant
 	RealName       string    `gorm:"size:255;not null"` // Real name of the participant
 	Group          string    `gorm:"size:255;not null"` // Group of the participant

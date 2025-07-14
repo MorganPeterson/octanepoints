@@ -7,12 +7,6 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-const (
-	defaultCG         int    = 7 // Default CG value
-	defaultOverallURL string = "https://rallysimfans.hu/rbr/csv_export_results.php?rally_id=%d&cg=%d"
-	defaultBetaURL    string = "https://rallysimfans.hu/rbr/csv_export_beta.php?rally_id=%d"
-)
-
 var defaultPoints = []int{
 	32, 28, 25, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,
 }
@@ -20,17 +14,13 @@ var defaultPoints = []int{
 // Config is the top‐level representation of your TOML file.
 // Add or remove fields / nested structs as your application requires.
 type Config struct {
-	HTTP struct {
-		CG         int    `toml:"cg"`         // e.g. 7
-		OverallURL string `toml:"overallUrl"` // e.g. "https://example.com/data.csv"
-		BetaUrl    string `toml:"betaUrl"`    // e.g. "https://example.com/beta.csv"
-	} `toml:"http"` // Nested struct for HTTP configuration
 	Database struct {
 		Name string `toml:"name"` // e.g. "octanepoints.db"
 	} `toml:"database"` // Nested struct for database configuration
 	General struct {
-		Headers string `toml:"headers"` // e.g. "pos,driver,points"
-		Points  []int  `toml:"points"`  // e.g. [32, 28, 25, ...]
+		Headers        string `toml:"headers"`        // e.g. "pos,driver,points"
+		Points         []int  `toml:"points"`         // e.g. [32, 28, 25, ...]
+		DescriptionDir string `toml:"descriptionDir"` // Directory for rally descriptions, e.g. "rallies"
 	} `toml:"general"` // Nested struct for general configuration
 }
 
@@ -60,25 +50,13 @@ func Load(path string) (*Config, error) {
 func MustLoad(path string) *Config {
 	cfg, err := Load(path)
 	if err != nil {
-		panic(fmt.Sprintf("failed to load config: %v", err))
+		panic(fmt.Sprintf("failed to load config: %+v", err))
 	}
 	return cfg
 }
 
 // validate sets defaults and enforces required fields.
 func (c *Config) validate() error {
-	if c.HTTP.CG == 0 {
-		c.HTTP.CG = defaultCG // Set default CG if not specified
-	}
-
-	if c.HTTP.OverallURL == "" {
-		c.HTTP.OverallURL = defaultOverallURL // Set default OverallURL if not specified
-	}
-
-	if c.HTTP.BetaUrl == "" {
-		c.HTTP.BetaUrl = defaultBetaURL // Set default BetaUrl if not specified
-	}
-
 	if len(c.General.Headers) == 0 {
 		c.General.Headers = "pos,driver,points" // Set default headers if not specified
 	}

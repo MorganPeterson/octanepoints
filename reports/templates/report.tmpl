@@ -1,0 +1,14 @@
+# Rally Result
+
+| Pos | Driver               | Points |
+|-----|----------------------|--------|
+{{- range .Rally}}
+| {{printf "%3s" .Raw.Position}} | {{printf "%-20s" .Raw.UserName}} | {{printf "%4d" .Points}} |
+{{- end}}
+
+# Overall Standings
+| Rank | Driver              | Points |
+|------|---------------------|--------|
+{{range $i, $s := .Championship}}
+| {{printf "%4d" (add $i 1)}} | {{printf "%-20s" $s.UserName}} | {{printf "%5d" $s.Points}} |
+{{end}}

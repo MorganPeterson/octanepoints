@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -12,6 +13,12 @@ import (
 	"git.sr.ht/~nullevoid/octanepoints/configuration"
 	"git.sr.ht/~nullevoid/octanepoints/database"
 )
+
+type SeasonsStandings struct {
+	UserId   uint64
+	UserName string
+	Points   int64
+}
 
 // ScoreRecord holds the raw data and the assigned points for each record.
 type ScoreRecord struct {
@@ -61,6 +68,46 @@ func FetchRallyStagesDB(
 	}
 
 	return nil, fmt.Errorf("no records found for rally ID %d", rallyId)
+}
+
+func FetchChampionshipPoints(
+	store *database.Store, config *configuration.Config,
+) ([]SeasonsStandings, error) {
+	// Fetch all overall records from the database
+	var recs []database.RallyOverall
+	if err := store.DB.Find(&recs).Error; err != nil {
+		return nil, fmt.Errorf("fetching overall records: %w", err)
+	}
+
+	standingsMap := make(map[uint64]*SeasonsStandings)
+	for _, r := range recs {
+		pos, err := strconv.Atoi(r.Position)
+		if err != nil || pos < 1 || pos > len(config.General.Points) {
+			continue
+		}
+		pts := config.General.Points[pos-1]
+		if entry, ok := standingsMap[r.UserId]; ok {
+			entry.Points += int64(pts)
+		} else {
+			standingsMap[r.UserId] = &SeasonsStandings{
+				UserId:   r.UserId,
+				UserName: r.UserName,
+				Points:   int64(pts),
+			}
+		}
+	}
+
+	standings := make([]SeasonsStandings, 0, len(standingsMap))
+	for _, e := range standingsMap {
+		standings = append(standings, *e)
+	}
+
+	// Sort standings by points in descending order
+	sort.Slice(standings, func(i, j int) bool {
+		return standings[i].Points > standings[j].Points
+	})
+
+	return standings, nil
 }
 
 func ParseStringToUint(s string) uint64 {

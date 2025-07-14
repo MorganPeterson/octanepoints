@@ -8,6 +8,7 @@ import (
 	"git.sr.ht/~nullevoid/octanepoints/configuration"
 	"git.sr.ht/~nullevoid/octanepoints/database"
 	"git.sr.ht/~nullevoid/octanepoints/points"
+	"git.sr.ht/~nullevoid/octanepoints/reports"
 )
 
 const (
@@ -20,6 +21,9 @@ func main() {
 	// flags
 	createRallyFlag := flag.String("create", "", "create rally with given ID number")
 	pointsRallyFlag := flag.String("points", "", "fetch points for a single rally given ID number")
+	championshipFlag := flag.Bool("championship", false, "fetch championship points")
+	reportFlag := flag.String("report", "", "export report to markdown file")
+
 	flag.Parse()
 
 	// Load the configuration
@@ -64,6 +68,52 @@ func main() {
 		return
 	}
 
+	if championshipFlag != nil && *championshipFlag {
+		// Fetch championship points
+		standings, err := points.FetchChampionshipPoints(store, config)
+		if err != nil {
+			log.Fatalf("Failed to fetch championship points: %v", err)
+		}
+
+		// Print the standings
+		fmt.Println("UserName,Points")
+		for _, standing := range standings {
+			fmt.Printf("%s,%d\n", standing.UserName, standing.Points)
+		}
+
+		return
+	}
+
+	if reportFlag != nil && *reportFlag != "" {
+		// Parse the rally ID from the command line argument
+		rallyId := points.ParseStringToUint(*reportFlag)
+
+		// Get points for the rally
+		scored, err := getRallyPoints(rallyId, store, config)
+		if err != nil {
+			log.Fatalf("Failed to get rally points: %v", err)
+		}
+
+		// Fetch championship points
+		standings, err := points.FetchChampionshipPoints(store, config)
+		if err != nil {
+			log.Fatalf("Failed to fetch championship points: %v", err)
+		}
+
+		// Prepare report data
+		reportData := reports.ReportData{
+			Rally:        scored,
+			Championship: standings,
+		}
+
+		// Export the report to markdown file
+		if err := reports.ExportMarkdown("report.md", reportData); err != nil {
+			log.Fatalf("Failed to export report: %v", err)
+		}
+
+		fmt.Println("Report exported to report.md")
+		return
+	}
 }
 
 func createRally(rallyId uint64, config *configuration.Config, store *database.Store) error {

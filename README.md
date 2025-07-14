@@ -102,6 +102,11 @@ and then run `points` to collect points on the rally.
 ./octanepoints -create 12345 // will load rally 12345 data into the database
 
 ./octanepoints -points 12345 // will print out results and points of rally 12345
+
+./octanepoints -championship // will print out current championship standings
+
+./octanepoints -report 12345 // will generate a report for rally 12345
+
 ```
 
 Once a rally is "created" and loaded into the database, you will never have to 

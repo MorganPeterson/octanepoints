@@ -8,8 +8,9 @@ import (
 )
 
 const (
-	defaultCG  int    = 7 // Default CG value
-	defaultURL string = "https://rallysimfans.hu/rbr/csv_export_results.php?rally_id=%d&cg=%d"
+	defaultCG         int    = 7 // Default CG value
+	defaultOverallURL string = "https://rallysimfans.hu/rbr/csv_export_results.php?rally_id=%d&cg=%d"
+	defaultBetaURL    string = "https://rallysimfans.hu/rbr/csv_export_beta.php?rally_id=%d"
 )
 
 var defaultPoints = []int{
@@ -19,10 +20,18 @@ var defaultPoints = []int{
 // Config is the top‐level representation of your TOML file.
 // Add or remove fields / nested structs as your application requires.
 type Config struct {
-	CG      int    `toml:"cg"`      // e.g. 7
-	Headers string `toml:"headers"` // e.g. "pos,driver,points"
-	Points  []int  `toml:"points"`  // e.g. [32, 28, 25, ...]
-	URL     string `toml:"url"`     // e.g. "https://example.com/data.csv"
+	HTTP struct {
+		CG         int    `toml:"cg"`         // e.g. 7
+		OverallURL string `toml:"overallUrl"` // e.g. "https://example.com/data.csv"
+		BetaUrl    string `toml:"betaUrl"`    // e.g. "https://example.com/beta.csv"
+	} `toml:"http"` // Nested struct for HTTP configuration
+	Database struct {
+		Name string `toml:"name"` // e.g. "octanepoints.db"
+	} `toml:"database"` // Nested struct for database configuration
+	General struct {
+		Headers string `toml:"headers"` // e.g. "pos,driver,points"
+		Points  []int  `toml:"points"`  // e.g. [32, 28, 25, ...]
+	} `toml:"general"` // Nested struct for general configuration
 }
 
 // Load reads the TOML file at path, decodes into Config, and
@@ -58,16 +67,24 @@ func MustLoad(path string) *Config {
 
 // validate sets defaults and enforces required fields.
 func (c *Config) validate() error {
-	if c.CG == 0 {
-		c.CG = defaultCG // Set default CG if not specified
+	if c.HTTP.CG == 0 {
+		c.HTTP.CG = defaultCG // Set default CG if not specified
 	}
 
-	if c.URL == "" {
-		c.URL = defaultURL // Set default URL if not specified
+	if c.HTTP.OverallURL == "" {
+		c.HTTP.OverallURL = defaultOverallURL // Set default OverallURL if not specified
 	}
 
-	if len(c.Points) == 0 {
-		c.Points = defaultPoints // Use default points if none specified
+	if c.HTTP.BetaUrl == "" {
+		c.HTTP.BetaUrl = defaultBetaURL // Set default BetaUrl if not specified
+	}
+
+	if len(c.General.Headers) == 0 {
+		c.General.Headers = "pos,driver,points" // Set default headers if not specified
+	}
+
+	if len(c.General.Points) == 0 {
+		c.General.Points = defaultPoints // Use default points if none specified
 	}
 
 	return nil

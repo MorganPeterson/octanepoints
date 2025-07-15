@@ -1,0 +1,5 @@
+| Driver | Country | Started | Wins | Podiums | Stage Wins | Best Pos. | Avg Pos. | Super Rallies | Points |
+|--------|---------|---------|------|---------|------------|-----------|----------|---------------|--------|
+{{- range . }}
+| {{ .UserName }} | {{ .Nationality }} | {{ .RalliesStarted }} | {{ .RallyWins }} | {{ .Podiums }} | {{ .StageWins }} | {{ .BestPosition }} | {{ printf "%.2f" .AveragePosition }} | {{ .TotalSuperRalliedStages }} | {{ .TotalChampionshipPoints }} |
+{{- end }}

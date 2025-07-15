@@ -10,6 +10,20 @@ import (
 	"gorm.io/gorm/logger"
 )
 
+// DriverSummary holds all of your 10 summary metrics.
+type DriverSummary struct {
+	UserName                string  `gorm:"column:user_name"`
+	Nationality             string  `gorm:"column:nationality"`
+	RalliesStarted          int64   `gorm:"column:rallies_started"`
+	RallyWins               int64   `gorm:"column:rally_wins"`
+	Podiums                 int64   `gorm:"column:podiums"`
+	StageWins               int64   `gorm:"column:stage_wins"`
+	BestPosition            int64   `gorm:"column:best_position"`
+	AveragePosition         float64 `gorm:"column:average_position"`
+	TotalSuperRalliedStages int64   `gorm:"column:total_super_rallied_stages"`
+	TotalChampionshipPoints int64   `gorm:"column:total_championship_points"`
+}
+
 type Rally struct {
 	ID               uint64    `gorm:"primaryKey;autoIncrement"` // Add an ID field for GORM
 	RallyId          uint64    `gorm:"not null;uniqueIndex"`     // Use uint64 for RallyId

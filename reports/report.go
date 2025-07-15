@@ -4,6 +4,7 @@ import (
 	"os"
 	"text/template"
 
+	"git.sr.ht/~nullevoid/octanepoints/database"
 	"git.sr.ht/~nullevoid/octanepoints/points"
 )
 
@@ -29,4 +30,19 @@ func ExportMarkdown(filename string, data ReportData) error {
 
 	// this will execute the single, top‑level template
 	return tpl.ExecuteTemplate(f, "report.tmpl", data)
+}
+
+func ExportDriverSummaries(filename string, sums []database.DriverSummary) error {
+	tpl, err := template.ParseFiles("reports/templates/summary.tmpl")
+	if err != nil {
+		return err
+	}
+
+	f, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	return tpl.ExecuteTemplate(f, "summary.tmpl", sums)
 }

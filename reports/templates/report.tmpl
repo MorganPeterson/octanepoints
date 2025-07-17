@@ -1,14 +1,14 @@
 # Rally Result
 
-| Pos | Driver               | Points |
-|-----|----------------------|--------|
+| Pos | Driver               | Pnts |
+|-----|----------------------|------|
 {{- range .Rally}}
-| {{printf "%3s" .Raw.Position}} | {{printf "%-20s" .Raw.UserName}} | {{printf "%4d" .Points}} |
+| {{printf "%3s" .Raw.Position}} | {{ pad .Raw.UserName 20 }} | {{ padNum .Points 4}} |
 {{- end}}
 
 # Overall Standings
-| Rank | Driver              | Points |
-|------|---------------------|--------|
-{{range $i, $s := .Championship}}
-| {{printf "%4d" (add $i 1)}} | {{printf "%-20s" $s.UserName}} | {{printf "%5d" $s.Points}} |
-{{end}}
+| Pos | Driver               | Pnts |
+|-----|----------------------|------|
+{{- range $i, $s := .Championship}}
+| {{ printf "%3d" (add $i 1) }} | {{ pad $s.UserName 20 }} | {{ padNum $s.Points 4 }} |
+{{- end}}

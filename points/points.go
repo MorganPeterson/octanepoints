@@ -23,7 +23,7 @@ type SeasonsStandings struct {
 // ScoreRecord holds the raw data and the assigned points for each record.
 type ScoreRecord struct {
 	Raw    database.RallyOverall
-	Points int
+	Points int64
 }
 
 // assignPointsOverall assigns points to each record based on the configured points system.
@@ -32,7 +32,7 @@ func AssignPointsOverall(
 ) ([]ScoreRecord, error) {
 	scored := make([]ScoreRecord, len(recs))
 	for i, rec := range recs {
-		pts := 0
+		pts := int64(0)
 		if i < len(config.General.Points) {
 			pts = config.General.Points[i]
 		}

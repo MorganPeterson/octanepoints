@@ -1,5 +1,6 @@
-| Driver | Country | Started | Wins | Podiums | Stage Wins | Best Pos. | Avg Pos. | Super Rallies | Points |
-|--------|---------|---------|------|---------|------------|-----------|----------|---------------|--------|
-{{- range . }}
-| {{ .UserName }} | {{ .Nationality }} | {{ .RalliesStarted }} | {{ .RallyWins }} | {{ .Podiums }} | {{ .StageWins }} | {{ .BestPosition }} | {{ printf "%.2f" .AveragePosition }} | {{ .TotalSuperRalliedStages }} | {{ .TotalChampionshipPoints }} |
+                                                           Stage    Best      Avg
+| Pos | Driver            | Nat | Starts | Wins | Podium |  Win  | Overall |  Pos. | SR | Pnts |
+|-----|-------------------|-----|--------|------|--------|-------|---------|-------|----|------|
+{{- range $i, $s := . }}
+| {{ printf "%3d" (add $i 1) }} | {{ pad $s.UserName 17 }} | {{ pad $s.Nationality 3 }} | {{ padNum $s.RalliesStarted 6 }} | {{ padNum $s.RallyWins 4 }} | {{ padNum $s.Podiums 6 }} | {{ padNum $s.StageWins 5 }} | {{ padNum $s.BestPosition 7 }} | {{ padFloat (printf "%4.2f" $s.AveragePosition) 5 }} | {{ padNum $s.TotalSuperRalliedStages 2 }} | {{ padNum $s.TotalChampionshipPoints 4 }} |
 {{- end }}

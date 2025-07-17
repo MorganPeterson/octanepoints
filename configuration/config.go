@@ -7,7 +7,7 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-var defaultPoints = []int{
+var defaultPoints = []int64{
 	32, 28, 25, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,
 }
 
@@ -18,9 +18,9 @@ type Config struct {
 		Name string `toml:"name"` // e.g. "octanepoints.db"
 	} `toml:"database"` // Nested struct for database configuration
 	General struct {
-		Headers        string `toml:"headers"`        // e.g. "pos,driver,points"
-		Points         []int  `toml:"points"`         // e.g. [32, 28, 25, ...]
-		DescriptionDir string `toml:"descriptionDir"` // Directory for rally descriptions, e.g. "rallies"
+		Headers        string  `toml:"headers"`        // e.g. "pos,driver,points"
+		Points         []int64 `toml:"points"`         // e.g. [32, 28, 25, ...]
+		DescriptionDir string  `toml:"descriptionDir"` // Directory for rally descriptions, e.g. "rallies"
 	} `toml:"general"` // Nested struct for general configuration
 }
 

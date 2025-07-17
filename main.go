@@ -109,7 +109,7 @@ func main() {
 		}
 
 		// Export the report to markdown file
-		if err := reports.ExportMarkdown("report.md", reportData); err != nil {
+		if err := reports.ExportReport("report.md", reportData); err != nil {
 			log.Fatalf("Failed to export report: %v", err)
 		}
 

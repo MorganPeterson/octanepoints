@@ -1,0 +1,610 @@
+{
+    "cars": [
+        {
+            "RSFID": 81,
+            "Brand": "Ford",
+            "Model": "Fiesta Rally2",
+            "Category": "Rally 2"
+        },
+        {
+            "RSFID": 102,
+            "Brand": "Hyundai",
+            "Model": "i20 N Rally2",
+            "Category": "Rally 2"
+        },
+        {
+            "RSFID": 106,
+            "Brand": "Skoda",
+            "Model": "Fabia RS Rally2",
+            "Category": "Rally 2"
+        },
+        {
+            "RSFID": 107,
+            "Brand": "Toyota",
+            "Model": "GR Yaris Rally2",
+            "Category": "Rally 2"
+        },
+        {
+            "RSFID": 88,
+            "Brand":"Ford",
+            "Model": "Fiesta Rally3",
+            "Category": "Rally 3"
+        },
+        {
+            "RSFID": 108,
+            "Brand": "Renault",
+            "Model": "Clio Rally3",
+            "Category": "Rally 3"
+        },
+        {
+            "RSFID": 80,
+            "Brand": "Ford",
+            "Model": "Fiesta Rally4",
+            "Category": "Rally 4"
+        },
+        {
+            "RSFID": 85,
+            "Brand": "Peugeot",
+            "Model": "208 Rally4",
+            "Category": "Rally 4"
+        },
+        {
+            "RSFID": 93,
+            "Brand": "Renault",
+            "Model": "Clio Rally4",
+            "Category": "Rally 4"
+        },
+        {
+            "RSFID": 96,
+            "Brand": "Renault",
+            "Model": "Clio Rally5",
+            "Category": "Rally 5"
+        },
+        {
+            "RSFID": 90,
+            "Brand": "Peugeot",
+            "Model": "207 S2000 Evolution Plus",
+            "Category": "Super 2000"
+        },
+        {
+            "RSFID": 91,
+            "Brand": "Abarth",
+            "Model": "Grande Punto S2000",
+            "Category": "Super 2000"
+        },
+        {
+            "RSFID": 92,
+            "Brand": "Ford",
+            "Model": "Fiesta MK VI S2000",
+            "Category": "Super 2000"
+        },
+        {
+            "RSFID": 98,
+            "Brand": "Skoda",
+            "Model": "Fabia S2000 Evo 2",
+            "Category": "Super 2000"
+        },
+        {
+            "RSFID": 54,
+            "Brand": "Citroen",
+            "Model": "C2 GT S1600",
+            "Category": "Super 1600"
+        },
+        {
+            "RSFID": 40,
+            "Brand": "Fiat",
+            "Model": "124 Abarth Rally RGT",
+            "Category": "Super RGT"
+        },
+        {
+            "RSFID": 62,
+            "Brand": "Aston Martin",
+            "Model": "Vantage RGT",
+            "Category": "Super RGT"
+        },
+        {
+            "RSFID": 63,
+            "Brand": "Porsche",
+            "Model": "911 GT3 RS (2007) RGT",
+            "Category": "Super RGT"
+        },
+        {
+            "RSFID": 64,
+            "Brand": "Lotus",
+            "Model": "Exige S RGT",
+            "Category": "Super RGT"
+        },
+        {
+            "RSFID": 50,
+            "Brand": "Porsche",
+            "Model": "911 GT3 R5 (2010) RGT",
+            "Category": "Super RGT"
+        },
+        {
+            "RSFID": 83,
+            "Brand": "Alpine",
+            "Model": "A110 Rally RGT",
+            "Category": "Super RGT"
+        },
+        {
+            "RSFID": 37,
+            "Brand": "Ford",
+            "Model": "Fiesta R5",
+            "Category": "Group R5"
+        },
+        {
+            "RSFID": 38,
+            "Brand": "Hyundai",
+            "Model": "i20 R5",
+            "Category": "Group R5"
+        },
+        {
+            "RSFID": 39,
+            "Brand": "Skoda",
+            "Model": "Fabia R5",
+            "Category": "Group R5"
+        },
+        {
+            "RSFID": 42,
+            "Brand": "Skoda",
+            "Model": "Fabia R5 evo",
+            "Category": "Group R5"
+        },
+        {
+            "RSFID": 45,
+            "Brand": "VW",
+            "Model": "Polo GTI R5",
+            "Category": "Group R5"
+        },
+        {
+            "RSFID": 51,
+            "Brand": "Citroen",
+            "Model": "DS3 R5",
+            "Category": "Group R5"
+        },
+        {
+            "RSFID": 69,
+            "Brand": "Citroen",
+            "Model": "C3 R5",
+            "Category": "Group R5"
+        },
+        {
+            "RSFID": 103,
+            "Brand": "Peugeot",
+            "Model": "208 T16 R5",
+            "Category": "Group R5"
+        },
+        {
+            "RSFID": 36,
+            "Brand": "Subaru",
+            "Model": "Impreza N15 R4",
+            "Category": "Group R4"
+        },
+        {
+            "RSFID": 48,
+            "Brand": "Mitsubishi",
+            "Model": "Lancer Evo IX R4",
+            "Category": "Group R4"
+        },
+        {
+            "RSFID": 56,
+            "Brand": "Mitsubishi",
+            "Model": "Lancer Evo X R4",
+            "Category": "Group R4"
+        },
+        {
+            "RSFID": 32,
+            "Brand": "Citroen",
+            "Model": "DS3 R3-MAX",
+            "Category": "Group R3"
+        },
+        {
+            "RSFID": 33,
+            "Brand": "Honda",
+            "Model": "Civic Type R(FN2) R3",
+            "Category": "Group R3"
+        },
+        {
+            "RSFID": 34,
+            "Brand": "Renault",
+            "Model": "Clio III R3",
+            "Category": "Group R3"
+        },
+        {
+            "RSFID": 35,
+            "Brand": "Renault",
+            "Model": "Clio IV R3T",
+            "Category": "Group R3"
+        },
+        {
+            "RSFID": 97,
+            "Brand": "Fiat",
+            "Model": "Abarth 500 R3T",
+            "Category": "Group R3"
+        },
+        {
+            "RSFID": 27,
+            "Brand": "Citroen",
+            "Model": "C2 R2 Max",
+            "Category": "Group R2"
+        },
+        {
+            "RSFID": 28,
+            "Brand": "Ford",
+            "Model": "Fiesta R2",
+            "Category": "Group R2"
+        },
+        {
+            "RSFID": 29,
+            "Brand": "Opel",
+            "Model": "Adam R2",
+            "Category": "Group R2"
+        },
+        {
+            "RSFID": 30,
+            "Brand": "Peugeot",
+            "Model": "208 R2",
+            "Category": "Group R2"
+        },
+        {
+            "RSFID": 31,
+            "Brand": "Renault",
+            "Model": "Twingo R2 Evo",
+            "Category": "Group R2"
+        },
+        {
+            "RSFID": 71,
+            "Brand": "Ford",
+            "Model": "Fiesta Mk VIII R2",
+            "Category": "Group R2"
+        },
+        {
+            "RSFID": 25,
+            "Brand": "Citroen",
+            "Model": "DS3 R1",
+            "Category": "Group R1"
+        },
+        {
+            "RSFID": 26,
+            "Brand": "Renault",
+            "Model": "Twingo R1",
+            "Category": "Group R1"
+        },
+        {
+            "RSFID": 24,
+            "Brand": "Mitsubishi",
+            "Model": "Lancer Evo IX N4",
+            "Category": "Group N4"
+        },
+        {
+            "RSFID": 47,
+            "Brand": "Subaru",
+            "Model": "Impreza N14 N4",
+            "Category": "Group N4"
+        },
+        {
+            "RSFID": 79,
+            "Brand": "Seat",
+            "Model": "Leon Cupra R GrpN",
+            "Category": "Group N4"
+        },
+        {
+            "RSFID": 23,
+            "Brand": "Porsche",
+            "Model": "911 SC RS GrpB",
+            "Category": "Group B"
+        },
+        {
+            "RSFID": 41,
+            "Brand": "Lada",
+            "Model": "VFTS GrpB",
+            "Category": "Group B"
+        },
+        {
+            "RSFID": 61,
+            "Brand": "Skoda",
+            "Model": "130 LR GrpB",
+            "Category": "Group B"
+        },
+        {
+            "RSFID": 65,
+            "Brand": "Opel",
+            "Model": "Manta 400 GrpB",
+            "Category": "Group B"
+        },
+        {
+            "RSFID": 66,
+            "Brand": "Audi",
+            "Model": "quattro A1 GrpB",
+            "Category": "Group B"
+        },
+        {
+            "RSFID": 67,
+            "Brand": "Audi",
+            "Model": "quattro A2 GrpB",
+            "Category": "Group B"
+        },
+        {
+            "RSFID": 68,
+            "Brand": "Audi",
+            "Model": "Sport quattro GrpB",
+            "Category": "Group B"
+        },
+        {
+            "RSFID": 70,
+            "Brand": "Peugeot",
+            "Model": "205 T16 GrpB",
+            "Category": "Group B"
+        },
+        {
+            "RSFIID": 77,
+            "Brand": "Toyota",
+            "Model": "Celica TCT (TA64) GrpB",
+            "Category": "Group B"
+        },
+        {
+            "RSFID": 99,
+            "Brand": "BMW",
+            "Model": "M1 GrpB",
+            "Category": "Group B"
+        },
+        {
+            "RSFID": 22,
+            "Brand": "Subaru",
+            "Model": "Impreza GC8 555 GrpA",
+            "Category": "A8"
+        },
+        {
+            "RSFID": 43,
+            "Brand": "Ford",
+            "Model": "Escort MK 5 RS Cosworth Grp",
+            "Category": "Group A8"
+        },
+        {
+            "RSFID": 49,
+            "Brand": "Mitsubishi",
+            "Model": "Lancer Evo II GrpA",
+            "Category": "Group A8"
+        },
+        {
+            "RSFID": 53,
+            "Brand": "Toyota",
+            "Model": "Celica 2000GT(ST185) GrpA",
+            "Category": "Group A8"
+        },
+        {
+            "RSFID": 72,
+            "Brand": "Audi",
+            "Model": "200 quattro GrpA",
+            "Category": "Group A8"
+        },
+        {
+            "RSFID": 73,
+            "Brand": "Lancia",
+            "Model": "Delta HF 4WD GrpA",
+            "Category": "Group A8"
+        },
+        {
+            "RSFID": 74,
+            "Brand": "Mazda",
+            "Model": "323 BF 4WD Turbo GrpA",
+            "Category": "Group A8"
+        },
+        {
+            "RSFID": 87,
+            "Brand": "BMW",
+            "Model": "M3 E30 GrpA",
+            "Category": "Group A8"
+        },
+        {
+            "RSFID": 89,
+            "Brand": "BMW",
+            "Model": "M3 E36 GrpA",
+            "Category": "Group A8"
+        },
+        {
+            "RSFID": 105,
+            "Brand": "Volvo",
+            "Model": "240 Turbo GrpA",
+            "Category": "Group A8"
+        },
+        {
+            "RSFID": 21,
+            "Brand": "Renault",
+            "Model": "Clio 16S Williams GrpA",
+            "Category": "Group A7"
+        },
+        {
+            "RSFID": 44,
+            "Brand": "Renault",
+            "Model": "5 GT Turbo GrpA",
+            "Category": "Group A7"
+        },
+        {
+            "RSFID": 75,
+            "Brand": "VW",
+            "Model": "Golf II GTI 16V GrpA",
+            "Category": "Group A7"
+        },
+        {
+            "RSFID": 94,
+            "Brand": "Citroen",
+            "Model": "Xsara Kit Car",
+            "Category": "Group A7"
+        },
+        {
+            "RSFID": 95,
+            "Brand": "Peugeot",
+            "Model": "306 Maxi Kit Car",
+            "Category": "Group A7"
+        },
+        {
+            "RSFID": 60,
+            "Brand": "Lada",
+            "Model": "Kalina RC2 GrpA",
+            "Category": "Group A6"
+        },
+        {
+            "RSFID": 86,
+            "Brand": "Peugeot",
+            "Model": "106 Rallye S20 GrpA",
+            "Category": "Group A6"
+        },
+        {
+            "RSFID": 20,
+            "Brand": "Trabant",
+            "Model": "P 800 RS GrpA",
+            "Category": "Group A5"
+        },
+        {
+            "RSFID": 46,
+            "Brand": "Wartburg",
+            "Model": "353 W 460 GrpA",
+            "Category": "Group A5"
+        },
+        {
+            "RSFID": 59,
+            "Brand": "Skoda",
+            "Model": "Favorit 136 L GrpA",
+            "Category": "Group A5"
+        },
+        {
+            "RSFID": 18,
+            "Brand": "Audi",
+            "Model": "quattro Grp4",
+            "Category": "Group 4"
+        },
+        {
+            "RSFID": 19,
+            "Brand": "Opel",
+            "Model": "Ascona 400 Grp4",
+            "Category": "Group 4"
+        },
+        {
+            "RSFID": 52,
+            "Brand": "Porsche",
+            "Model": "911 SC 3.0 Grp4",
+            "Category": "Group 4"
+        },
+        {
+            "RSFID": 78,
+            "Brand": "Ford",
+            "Model": "Escort MKII RS Grp4",
+            "Category": "Group 4"
+        },
+        {
+            "RSFID": 84,
+            "Brand": "Lancia",
+            "Model": "Stratos HF Grp4",
+            "Category": "Group 4"
+        },
+        {
+            "RSFID": 100,
+            "Brand": "Fiat",
+            "Model": "131 Abarth Grp4",
+            "Category": "Group 4"
+        },
+        {
+            "RSFID": 17,
+            "Brand": "Fiat",
+            "Model": "126 Grp2",
+            "Category": "Group 2"
+        },
+        {
+            "RSFID": 58,
+            "Brand": "Skoda",
+            "Model": "130 RS Grp2",
+            "Category": "Group 2"
+        },
+        {
+            "RSFID": 12,
+            "Brand": "Citroen",
+            "Model": "C4 WRC 2008",
+            "Category":"WRC 2.0"
+        },
+        {
+            "RSFID": 13,
+            "Brand": "Citroen",
+            "Model": "Xsara WRC 2006",
+            "Category": "WRC 2.0"
+        },
+        {
+            "RSFID": 55,
+            "Brand": "Ford",
+            "Model": "Focus MkII RS WRC 2006",
+            "Category": "WRC 2.0"
+        },
+        {
+            "RSFID": 57,
+            "Brand": "Subaru",
+            "Model": "Impreza GDA WRC2003 (S9)",
+            "Category": "WRC 2.0"
+        },
+        {
+            "RSFID": 82,
+            "Brand": "Skoda",
+            "Model": "Fabia WRC 2006",
+            "Category": "WRC 2.0"
+        },
+        {
+            "RSFID": 8,
+            "Brand": "Citroen",
+            "Model": "DS3 WRC",
+            "Category": "WRC 1.6"
+        },
+        {
+            "RSFID": 9,
+            "Brand": "Ford",
+            "Model": "Fiesta RS WRC 2014",
+            "Category": "WRC 1.6"
+        },
+        {
+            "RSFID": 10,
+            "Brand": "VW",
+            "Model": "Polo R WRC 2016",
+            "Category": "WRC 1.6"
+        },
+        {
+            "RSFID": 11,
+            "Brand": "Ford",
+            "Model": "Fiesta WRC 2019",
+            "Category": "WRC 1.6"
+        },
+        {
+            "RSFID": 14,
+            "Brand": "Citroen",
+            "Model": "C3 WRC 2017",
+            "Category": "WRC 1.6"
+        },
+        {
+            "RSFID": 15,
+            "Brand": "Hyundai",
+            "Model": "i20 Coupe WRC 2017",
+            "Category": "WRC 1.6"
+        },
+        {
+            "RSFID": 16,
+            "Brand": "Toyota",
+            "Model":"Yaris WRC 2018",
+            "Category": "WRC 1.6"
+        },
+        {
+            "RSFID": 76,
+            "Brand": "Hyundai",
+            "Model": "i20 Coupe WRC 2020",
+            "Category": "WRC 1.6"
+        },
+        {
+            "RSFID": 101,
+            "Brand": "Mini",
+            "Model": "JCW WRC",
+            "Category": "WRC 1.6"
+        },
+        {
+            "RSFID": 104,
+            "Brand": "Hyundai",
+            "Model": "i20 Coupe WRC 2021",
+            "Category": "WRC 1.6"
+        }
+    ]
+}

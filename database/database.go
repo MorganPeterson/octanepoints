@@ -2,13 +2,23 @@
 package database
 
 import (
+	"encoding/json"
 	"fmt"
+	"os"
 	"time"
 
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+type Cars struct {
+	ID       uint64 `gorm:"primaryKey;autoIncrement"`          // Add an ID field for GORM
+	RSFID    uint64 `gorm:"not null;uniqueIndex" json:"RSFID"` // Use uint64 for the RSF car ID
+	Brand    string `gorm:"size:255;not null" json:"Brand"`    // Name of the car
+	Model    string `gorm:"size:255;not null" json:"Model"`    // Model of the car
+	Category string `gorm:"size:255;not null" json:"Category"` // Category of the car
+}
 
 // DriverSummary holds all of your 10 summary metrics.
 type DriverSummary struct {
@@ -115,11 +125,26 @@ func NewStore(path string) (*Store, error) {
 
 // Migrate runs AutoMigrate on all your models.
 func (s *Store) Migrate() error {
-	return s.DB.AutoMigrate(
+	if err := s.DB.AutoMigrate(
 		&RallyOverall{},
 		&RallyStage{},
-		&Rally{}, // add additional models here
-	)
+		&Rally{},
+		&Cars{},
+	); err != nil {
+		return fmt.Errorf("failed to migrate database: %w", err)
+	}
+
+	var count int64
+	if err := s.DB.Model(&Cars{}).Count(&count).Error; err != nil {
+		return fmt.Errorf("counting cars: %w", err)
+	}
+	if count == 0 {
+		if err := seedFromJSON(s.DB, "cars.json"); err != nil {
+			return fmt.Errorf("seeding cars: %w", err)
+		}
+	}
+
+	return nil
 }
 
 // Close cleanly shuts down the database connection.
@@ -129,4 +154,27 @@ func (s *Store) Close() error {
 		return err
 	}
 	return sqlDB.Close()
+}
+
+func seedFromJSON(db *gorm.DB, path string) error {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+
+	var wrapper struct {
+		Cars []Cars `json:"cars"`
+	}
+
+	if err := json.Unmarshal(raw, &wrapper); err != nil {
+		return err
+	}
+
+	if len(wrapper.Cars) > 0 {
+		if err := db.Create(&wrapper.Cars).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

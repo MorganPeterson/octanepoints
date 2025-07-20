@@ -25,6 +25,7 @@ func main() {
 	championshipFlag := flag.Bool("championship", false, "fetch championship points")
 	reportFlag := flag.String("report", "", "export report to markdown file")
 	summaryFlag := flag.Bool("summary", false, "fetch driver summaries")
+	driverReportFlag := flag.String("driver", "", "export driver report to markdown file")
 
 	flag.Parse()
 
@@ -128,6 +129,22 @@ func main() {
 			log.Fatalf("Failed to export driver summaries: %v", err)
 		}
 		fmt.Println("Driver summaries exported to driver_summaries.md")
+		return
+	}
+
+	if driverReportFlag != nil && *driverReportFlag != "" {
+		// Parse the rally ID from the command line argument
+		rallyId := points.ParseStringToUint(*driverReportFlag)
+
+		// Get stages summary for the rally
+		summaries, err := reports.StagesSummary(rallyId, store)
+		if err != nil {
+			log.Fatalf("Failed to get stages summary: %v", err)
+		}
+
+		if err := reports.DriverSummary("driver_summary.md", summaries); err != nil {
+			log.Fatalf("Failed to export driver summary: %v", err)
+		}
 		return
 	}
 }

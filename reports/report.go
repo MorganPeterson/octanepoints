@@ -5,64 +5,13 @@ import (
 	"embed"
 	"fmt"
 	"os"
-	"text/template"
+	"strings"
 
-	"git.sr.ht/~nullevoid/octanepoints/database"
-	"git.sr.ht/~nullevoid/octanepoints/points"
+	"github.com/raykov/mdtopdf"
 )
-
-type ReportData struct {
-	Rally        []points.ScoreRecord
-	Championship []points.SeasonsStandings
-}
 
 //go:embed templates/*.tmpl
 var tmplFS embed.FS
-
-var (
-	summaryTmpl = template.Must(
-		template.New("summary.tmpl").
-			Funcs(template.FuncMap{
-				"add":      add,
-				"pad":      Pad,
-				"padNum":   PadNum,
-				"padFloat": PadFloat,
-			}).
-			ParseFS(tmplFS, "templates/summary.tmpl"),
-	)
-
-	reportTmpl = template.Must(
-		template.New("report.tmpl").
-			Funcs(template.FuncMap{
-				"add":      add,
-				"pad":      Pad,
-				"padNum":   PadNum,
-				"padFloat": PadFloat,
-			}).
-			ParseFS(tmplFS, "templates/report.tmpl"),
-	)
-
-	driverSummary = template.Must(
-		template.New("driver_summary.tmpl").
-			Funcs(template.FuncMap{
-				"formatStageTime": func(sec float64) string {
-					min := int(sec) / 60
-					s := sec - float64(min*60)
-					return fmt.Sprintf("%02d:%06.3f", min, s)
-				},
-				"formatDelta": func(d float64) string {
-					if d == 0 {
-						return "-"
-					}
-					return fmt.Sprintf("+%.3f s", d)
-				},
-				"formatPenalty": func(p float64) string {
-					return fmt.Sprintf("%.0f", p)
-				},
-			}).
-			ParseFS(tmplFS, "templates/driver_summary.tmpl"),
-	)
-)
 
 func add(a, b int) int { return a + b }
 
@@ -89,57 +38,30 @@ func PadFloat(s string, w int) string {
 	return string(bytes.Repeat([]byte(" "), w-len(s))) + s
 }
 
-func ExportReport(filename string, data ReportData) error {
-	var buf bytes.Buffer
-	if err := reportTmpl.Execute(&buf, data); err != nil {
-		return err
-	}
+func markdownToPdf(markdown string, pdfFile string) error {
+	md := strings.NewReader(markdown)
 
-	f, err := os.Create(filename)
+	out, err := os.Create(pdfFile)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating PDF file: %w", err)
 	}
-	defer f.Close()
+	defer out.Close()
 
-	if _, err := f.Write(buf.Bytes()); err != nil {
-		return err
+	if err := mdtopdf.Convert(md, out); err != nil {
+		return fmt.Errorf("conversion failed: %v", err)
 	}
 
 	return nil
 }
 
-func ExportDriverSummaries(filename string, sums []database.DriverSummary) error {
-	var buf bytes.Buffer
-	if err := summaryTmpl.Execute(&buf, sums); err != nil {
-		return err
-	}
-
+func writeMarkdown(filename string, data bytes.Buffer) error {
 	f, err := os.Create(filename)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	if _, err := f.Write(buf.Bytes()); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func DriverSummary(filename string, sums map[string]DriverReport) error {
-	var buf bytes.Buffer
-	if err := driverSummary.Execute(&buf, sums); err != nil {
-		return err
-	}
-
-	f, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	if _, err := f.Write(buf.Bytes()); err != nil {
+	if _, err := f.Write(data.Bytes()); err != nil {
 		return err
 	}
 

@@ -3,9 +3,7 @@ package configuration
 import (
 	"fmt"
 	"os"
-	"time"
 
-	"git.sr.ht/~nullevoid/octanepoints/database"
 	"github.com/BurntSushi/toml"
 )
 
@@ -30,43 +28,15 @@ type Description struct {
 	} `toml:"rally"` // Nested struct for rally configuration
 }
 
-func LoadRally(path string) (*database.Rally, error) {
+// LoadRally reads the TOML file at path, decodes into Description, and
+// applies any sensible defaults. It returns an error if parsing fails
+func LoadRally(path string) (*Description, error) {
 	desc, err := loadDescription(path)
 	if err != nil {
 		return nil, fmt.Errorf("loading rally description: %w", err)
 	}
 
-	// Convert the loaded description into a Rally struct
-	rally := &database.Rally{
-		RallyId:          desc.Rally.RallyId,
-		Name:             desc.Rally.Name,
-		Description:      desc.Rally.Description,
-		Creator:          desc.Rally.Creator,
-		DamageLevel:      desc.Rally.DamageLevel,
-		NumberOfLegs:     desc.Rally.NumberOfLegs,
-		SuperRally:       desc.Rally.SuperRally,
-		PacenotesOptions: desc.Rally.PacenotesOptions,
-		Started:          desc.Rally.Started,
-		Finished:         desc.Rally.Finished,
-		TotalDistance:    desc.Rally.TotalDistance,
-		CarGroups:        desc.Rally.CarGroups,
-	}
-	if desc.Rally.StartAt != "" {
-		startAt, err := time.Parse("2006-01-02 15:04", desc.Rally.StartAt)
-		if err != nil {
-			return nil, fmt.Errorf("parsing start time: %w", err)
-		}
-		rally.StartAt = startAt
-	}
-	if desc.Rally.EndAt != "" {
-		endAt, err := time.Parse("2006-01-02 15:04", desc.Rally.EndAt)
-		if err != nil {
-			return nil, fmt.Errorf("parsing end time: %w", err)
-		}
-		rally.EndAt = endAt
-	}
-
-	return rally, nil
+	return desc, nil
 }
 
 // LoadDescription reads the TOML file at path, decodes into Description, and

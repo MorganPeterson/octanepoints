@@ -18,7 +18,6 @@ type Config struct {
 		Name string `toml:"name"` // e.g. "octanepoints.db"
 	} `toml:"database"` // Nested struct for database configuration
 	General struct {
-		Headers        string  `toml:"headers"`        // e.g. "pos,driver,points"
 		Points         []int64 `toml:"points"`         // e.g. [32, 28, 25, ...]
 		DescriptionDir string  `toml:"descriptionDir"` // Directory for rally descriptions, e.g. "rallies"
 	} `toml:"general"` // Nested struct for general configuration
@@ -57,10 +56,6 @@ func MustLoad(path string) *Config {
 
 // validate sets defaults and enforces required fields.
 func (c *Config) validate() error {
-	if len(c.General.Headers) == 0 {
-		c.General.Headers = "pos,driver,points" // Set default headers if not specified
-	}
-
 	if len(c.General.Points) == 0 {
 		c.General.Points = defaultPoints // Use default points if none specified
 	}

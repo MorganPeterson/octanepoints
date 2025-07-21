@@ -1,9 +1,15 @@
-{{- range $driver, $stages := . }}
+{{- range $driver, $report := . }}
 ## Driver: {{ $driver }}
+
+| Metric | {{ $driver }} | Field Average | Rank |
+|:-------------------|:-----------:|:-------------:|:--:|
+{{- range $report.Overall}}
+| {{ .Metric }} | {{ .DriverValue }} | {{ .FieldAvg }} | {{ .RankText }}
+{{- end }}
 
 Stage | Name | Pos | Stage Time | Δ to Winner | Penalty | Comment
 ---|---|---|---|---|---|---
-{{- range $stages }}
+{{- range $report.Stages }}
 {{ printf "%d" .StageNum }} | {{ .StageName }} | {{ printf "%d" .Position }} | {{ formatStageTime .StageTime }} | {{ formatDelta .DeltaToWinner }} | {{ formatPenalty .Penalty }} | {{ printf "%q" .Comments }}
 {{- end }}
 

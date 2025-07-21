@@ -223,22 +223,6 @@ func fetchCsv(path string, config *configuration.Config) ([][]string, error) {
 	return reader.ReadAll()
 }
 
-// FormatHMS renders a time.Duration as either "MM:SS.sss" (if <1h)
-// or "HH:MM:SS.sss" when hours are non-zero.
-func formatHMS(d time.Duration) string {
-	h := d / time.Hour
-	rem := d % time.Hour
-	m := rem / time.Minute
-	s := rem % time.Minute
-
-	if h > 0 {
-		// include hours
-		return fmt.Sprintf("%02d:%02d:%06.3f", h, m, s.Seconds())
-	}
-	// no hours
-	return fmt.Sprintf("%02d:%06.3f", m, s.Seconds())
-}
-
 func parseFinishRealTime(row []string) time.Time {
 	FinishRealTime, err := time.Parse("2006-01-02 15:04:05", row[10])
 	if err != nil {

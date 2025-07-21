@@ -127,7 +127,7 @@ func ExportDriverSummaries(filename string, sums []database.DriverSummary) error
 	return nil
 }
 
-func DriverSummary(filename string, sums map[string][]StageSummary) error {
+func DriverSummary(filename string, sums map[string]DriverReport) error {
 	var buf bytes.Buffer
 	if err := driverSummary.Execute(&buf, sums); err != nil {
 		return err

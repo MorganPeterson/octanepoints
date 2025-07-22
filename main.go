@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
 
 	"git.sr.ht/~nullevoid/octanepoints/configuration"
 	"git.sr.ht/~nullevoid/octanepoints/database"
+	"git.sr.ht/~nullevoid/octanepoints/grab"
 	"git.sr.ht/~nullevoid/octanepoints/reports"
 )
 
@@ -18,8 +20,18 @@ func main() {
 	reportFlag := flag.String("report", "", "export report to markdown file")
 	summaryFlag := flag.Bool("summary", false, "fetch driver summaries")
 	driverReportFlag := flag.String("driver", "", "export driver report to markdown file")
+	grabFlag := flag.String("grab", "", "grab raw rally data with given ID number")
 
 	flag.Parse()
+
+	if grabFlag != nil && *grabFlag != "" {
+		// Grab raw rally data
+		if err := grab.Grab(context.Background(), *grabFlag); err != nil {
+			log.Fatalf("Failed to grab rally data: %v", err)
+		}
+		log.Printf("Rally %s setup successfully.\n", *grabFlag)
+		return
+	}
 
 	// Load the configuration
 	config := configuration.MustLoad(configPath)

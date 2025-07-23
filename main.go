@@ -21,6 +21,7 @@ func main() {
 	summaryFlag := flag.Bool("summary", false, "fetch driver summaries")
 	driverReportFlag := flag.String("driver", "", "export driver report to markdown file")
 	grabFlag := flag.String("grab", "", "grab raw rally data with given ID number")
+	classReportFlag := flag.String("class", "", "export class report to markdown file")
 
 	flag.Parse()
 
@@ -75,6 +76,14 @@ func main() {
 			log.Fatalf("Failed to export driver summary: %v", err)
 		}
 		fmt.Println("Driver summary exported to driver_summary.md")
+		return
+	}
+
+	if classReportFlag != nil && *classReportFlag != "" {
+		if err := reports.ExportClassReport(*classReportFlag, store, config); err != nil {
+			log.Fatalf("Failed to export class report: %v", err)
+		}
+		fmt.Println("Class report exported to class_summaries.md")
 		return
 	}
 }

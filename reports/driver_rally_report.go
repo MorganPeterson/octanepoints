@@ -58,23 +58,21 @@ func DriverRallyReport(rallyIdStr string, store *database.Store, config *configu
 func stagesSummary(
 	rallyId uint64, store *database.Store,
 ) (map[string]DriverReport, error) {
-	var userNames []string
-	err := store.DB.Model(&database.RallyStage{}).
-		Where("rally_id = ?", rallyId).
-		Distinct("user_name").
-		Pluck("user_name", &userNames).Error
+	userNames, err := database.GetRallyUserNames(store, rallyId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch user names: %w", err)
 	}
 
-	log.Printf("Found %d drivers for rally %d", len(userNames), rallyId)
 	summary := make(map[string]DriverReport)
+	driverConfig, err := configSummaries(rallyId, store)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get driver report config: %w", err)
+	}
+
 	for _, userName := range userNames {
-		var stages []StageSummary
-		sql := database.DriverStagesQuery()
-		err = store.DB.Raw(sql, rallyId, userName).Scan(&stages).Error
+		stages, err := database.GetDriverStages(store, rallyId, userName)
 		if err != nil {
-			return nil, fmt.Errorf("failed to fetch stages summary for %s: %w", userName, err)
+			return nil, fmt.Errorf("failed to fetch stages for %s: %w", userName, err)
 		}
 
 		if len(stages) == 0 {
@@ -82,9 +80,9 @@ func stagesSummary(
 		}
 
 		var overall []SummaryRow
-		overall, err = getDriverOverallSummary(rallyId, userName, store)
+		overall, err = getDriverOverallSummary(userName, driverConfig)
 		if err != nil {
-			log.Printf("failed to fetch overall summary for %s: %v", userName, err)
+			return nil, fmt.Errorf("failed to fetch overall summary for %s: %v", userName, err)
 		}
 
 		summary[userName] = DriverReport{

@@ -2,7 +2,6 @@ package reports
 
 import (
 	"bytes"
-	"sort"
 	"text/template"
 
 	"git.sr.ht/~nullevoid/octanepoints/configuration"
@@ -23,14 +22,10 @@ var summaryTmpl = template.Must(
 func ExportDriverSummaries(store *database.Store, config *configuration.Config) error {
 	var sums []database.DriverSummary
 
-	sql := database.GetSeasonSummaryQuery(config)
-	if err := store.DB.Raw(sql).Scan(&sums).Error; err != nil {
+	sums, err := database.GetSeasonSummary(store, config)
+	if err != nil {
 		return err
 	}
-
-	sort.Slice(sums, func(i, j int) bool {
-		return sums[i].TotalChampionshipPoints > sums[j].TotalChampionshipPoints
-	})
 
 	var buf bytes.Buffer
 	if err := summaryTmpl.Execute(&buf, sums); err != nil {

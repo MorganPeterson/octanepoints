@@ -79,7 +79,7 @@ func assignPointsOverall(
 	rallyId uint64, store *database.Store, config *configuration.Config,
 ) ([]ScoreRecord, error) {
 	// Fetch the overall results from the database
-	overallData, err := database.GetRallyOverall(rallyId, store)
+	overallData, err := database.GetRallyOverall(store, &database.QueryOpts{RallyId: rallyId})
 	if err != nil {
 		return nil, fmt.Errorf("Failed to fetch overall data: %w", err)
 	}
@@ -101,7 +101,7 @@ func assignPointsOverall(
 func fetchChampionshipPoints(
 	store *database.Store, config *configuration.Config,
 ) ([]SeasonsStandings, error) {
-	recs, err := database.GetAllRallyOveralls(store)
+	recs, err := database.GetRallyOverall(store, nil)
 	if err != nil {
 		return nil, fmt.Errorf("fetching overall records: %w", err)
 	}

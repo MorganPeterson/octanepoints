@@ -18,7 +18,8 @@ type Config struct {
 		Name string `toml:"name"` // e.g. "octanepoints.db"
 	} `toml:"database"` // Nested struct for database configuration
 	General struct {
-		Points         []int64 `toml:"points"`         // e.g. [32, 28, 25, ...]
+		Points         []int64 `toml:"points"`         // Overall points for drivers
+		ClassPoints    []int64 `toml:"classPoints"`    // Points for classes
 		DescriptionDir string  `toml:"descriptionDir"` // Directory for rally descriptions, e.g. "rallies"
 	} `toml:"general"` // Nested struct for general configuration
 }
@@ -58,6 +59,10 @@ func MustLoad(path string) *Config {
 func (c *Config) validate() error {
 	if len(c.General.Points) == 0 {
 		c.General.Points = defaultPoints // Use default points if none specified
+	}
+
+	if len(c.General.ClassPoints) == 0 {
+		c.General.ClassPoints = defaultPoints // Use default class points if none specified
 	}
 
 	return nil

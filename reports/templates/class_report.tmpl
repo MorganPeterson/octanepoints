@@ -1,0 +1,25 @@
+# Class Report
+
+{{- range .Rally.Classes }}
+## {{ .ClassName }}
+
+| Pos | Driver               | Time       | Pnts |
+|-----|----------------------|------------|------|
+{{- range .Rows }}
+| {{ padNum .Pos 3 }} | {{ pad .UserName 20 }} | {{ fmtDur .Time3 }} | {{ padNum .Points 4 }} |
+{{- end }}
+
+{{ end }}
+
+# Championship Standings by Class
+
+{{- range .Championship }}
+## {{ .ClassName }}
+
+| Pos | Driver               | Pnts |
+|-----|----------------------|------|
+{{- range .Rows }}
+| {{ padNum .Pos 3 }} | {{ pad .UserName 20 }} | {{ padNum .TotalPoints 4 }} |
+{{- end }}
+
+{{ end }}

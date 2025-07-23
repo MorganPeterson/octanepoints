@@ -120,3 +120,46 @@ WHERE r.user_name = :user_name
 ORDER BY r.stage_num;
 `
 }
+
+func ClassRankForRallyQuery() string {
+	return `
+  WITH ranked AS (
+  SELECT
+    ro.rally_id,
+    ro.user_id,
+    ro.user_name,
+    ro.time3,
+    cc.class_id,
+    ROW_NUMBER() OVER (PARTITION BY ro.rally_id, cc.class_id ORDER BY ro.time3) AS pos
+  FROM rally_overalls ro
+  JOIN cars      c  ON c.id = ro.car_id
+  JOIN class_cars cc ON cc.car_id = c.id
+  WHERE ro.super_rally = 0  -- omit DNFs
+    AND ro.rally_id = ?
+)
+SELECT rally_id, class_id, user_id, user_name, time3, pos
+FROM ranked
+ORDER BY class_id, pos;
+`
+}
+
+func ClassRankForChampionshipQuery() string {
+	return `
+WITH ranked AS (
+  SELECT
+    ro.rally_id,
+    ro.user_id,
+    ro.user_name,
+    ro.time3,
+    cc.class_id,
+    ROW_NUMBER() OVER (PARTITION BY ro.rally_id, cc.class_id ORDER BY ro.time3) AS pos
+  FROM rally_overalls ro
+  JOIN cars c       ON c.id = ro.car_id
+  JOIN class_cars cc ON cc.car_id = c.id
+  WHERE ro.super_rally = 0
+)
+SELECT rally_id, class_id, user_id, user_name, time3, pos
+FROM ranked
+ORDER BY rally_id, class_id, pos;
+`
+}

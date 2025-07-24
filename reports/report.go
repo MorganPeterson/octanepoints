@@ -15,29 +15,6 @@ var tmplFS embed.FS
 
 func add(a, b int) int { return a + b }
 
-// pad right-spaces a string to width w
-func Pad(s string, w int) string {
-	if len(s) >= w {
-		return s[:w]
-	}
-	return s + string(bytes.Repeat([]byte(" "), w-len(s)))
-}
-
-func PadNum(n int64, w int) string {
-	s := fmt.Sprint(n)
-	if len(s) >= w {
-		return s
-	}
-	return string(bytes.Repeat([]byte(" "), w-len(s))) + s
-}
-
-func PadFloat(s string, w int) string {
-	if len(s) >= w {
-		return s
-	}
-	return string(bytes.Repeat([]byte(" "), w-len(s))) + s
-}
-
 func markdownToPdf(markdown string, pdfFile string) error {
 	md := strings.NewReader(markdown)
 
@@ -52,6 +29,29 @@ func markdownToPdf(markdown string, pdfFile string) error {
 	}
 
 	return nil
+}
+
+// pad right-spaces a string to width w
+func pad(s string, w int) string {
+	if len(s) >= w {
+		return s[:w]
+	}
+	return s + string(bytes.Repeat([]byte(" "), w-len(s)))
+}
+
+func padFloat(s string, w int) string {
+	if len(s) >= w {
+		return s
+	}
+	return string(bytes.Repeat([]byte(" "), w-len(s))) + s
+}
+
+func padNum(n int64, w int) string {
+	s := fmt.Sprint(n)
+	if len(s) >= w {
+		return s
+	}
+	return string(bytes.Repeat([]byte(" "), w-len(s))) + s
 }
 
 func writeMarkdown(filename string, data bytes.Buffer) error {

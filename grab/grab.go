@@ -15,19 +15,19 @@ import (
 	"time"
 )
 
-const rallyCSVURLTmpl = "https://rallysimfans.hu/rbr/csv_export_beta.php?rally_id=%s"
-const rallyCSVOverallTmpl = "https://rallysimfans.hu/rbr/csv_export_results.php?rally_id=%s&cg=7"
+const rallyCSVURLTmpl = "https://rallysimfans.hu/rbr/csv_export_beta.php?rally_id=%d"
+const rallyCSVOverallTmpl = "https://rallysimfans.hu/rbr/csv_export_results.php?rally_id=%d&cg=7"
 const rallyDir = "rallies"
 const stageFileName = "_table.csv"
 const overallFileName = "_All_table.csv"
 
 type Paths struct {
-	Id   string // rally ID
+	Id   int64  // rally ID
 	Dir  string // directory where the file is saved
 	TOML string // path to the TOML file
 }
 
-func Grab(ctx context.Context, id string) error {
+func Grab(ctx context.Context, id int64) error {
 	p, err := prepare(id)
 	if err != nil {
 		return fmt.Errorf("failed to prepare paths: %w", err)
@@ -46,15 +46,15 @@ func Grab(ctx context.Context, id string) error {
 	return nil
 }
 
-func prepare(id string) (Paths, error) {
+func prepare(id int64) (Paths, error) {
 	p := Paths{Id: id}
 
-	p.Dir = filepath.Clean(filepath.Join(rallyDir, p.Id))
+	p.Dir = filepath.Clean(filepath.Join(rallyDir, fmt.Sprintf("%d", p.Id)))
 	if err := os.MkdirAll(p.Dir, 0o755); err != nil {
 		return p, fmt.Errorf("failed to create directory %s: %w", p.Dir, err)
 	}
 
-	p.TOML = filepath.Join(p.Dir, p.Id+".toml")
+	p.TOML = filepath.Join(p.Dir, fmt.Sprintf("%d.toml", p.Id))
 	if err := touch(p.TOML); err != nil {
 		return p, fmt.Errorf("failed to create TOML file %s: %w", p.TOML, err)
 	}
@@ -64,7 +64,7 @@ func prepare(id string) (Paths, error) {
 
 func overallDownload(ctx context.Context, p Paths) (string, error) {
 	// download the overall results
-	downloadPath := filepath.Join(p.Dir, p.Id+overallFileName)
+	downloadPath := filepath.Join(p.Dir, fmt.Sprintf("%d%s", p.Id, overallFileName))
 
 	rawUrl := fmt.Sprintf(rallyCSVOverallTmpl, p.Id)
 	if err := download(ctx, rawUrl, downloadPath); err != nil {
@@ -76,7 +76,7 @@ func overallDownload(ctx context.Context, p Paths) (string, error) {
 
 func stagesDownload(ctx context.Context, p Paths) (string, error) {
 	// download the stages results
-	downloadPath := filepath.Join(p.Dir, p.Id+stageFileName)
+	downloadPath := filepath.Join(p.Dir, fmt.Sprintf("%d%s", p.Id, stageFileName))
 
 	rawUrl := fmt.Sprintf(rallyCSVURLTmpl, p.Id)
 	if err := download(ctx, rawUrl, downloadPath); err != nil {
@@ -133,13 +133,6 @@ func download(ctx context.Context, rawUrl string, outPath string) error {
 		}
 	}
 
-	// Explicit DNS resolve
-	ips, err := net.DefaultResolver.LookupIPAddr(ctx, host)
-	if err != nil || len(ips) == 0 {
-		return fmt.Errorf("dns lookup error=%w", err)
-	}
-	// targetIP := ips[0].IP.String()
-
 	dialer := &net.Dialer{Timeout: 10 * time.Second, KeepAlive: 30 * time.Second}
 	conn, err := dialer.DialContext(ctx, "tcp", net.JoinHostPort(host, port))
 	if err != nil {
@@ -166,15 +159,6 @@ func download(ctx context.Context, rawUrl string, outPath string) error {
 		rw = tlsConn
 	}
 
-	// build and send the request manually
-	pathWithQuery := u.EscapedPath()
-	if pathWithQuery == "" {
-		pathWithQuery = "/"
-	}
-	if u.RawQuery != "" {
-		pathWithQuery += "?" + u.RawQuery
-	}
-
 	req, err := http.NewRequestWithContext(ctx, "GET", rawUrl, nil)
 	if err != nil {
 		return fmt.Errorf("new request: %w", err)
@@ -183,15 +167,12 @@ func download(ctx context.Context, rawUrl string, outPath string) error {
 	req.URL.Scheme = ""
 	req.URL.Host = ""
 	req.Header = http.Header{
-		"User-Agent":      []string{"Wget/1.25.0"},
+		"User-Agent":      []string{"Wget/1.25.0"}, // fake it until you make it
 		"Accept":          []string{"*/*"},
 		"Accept-Encoding": []string{"identity"},
 		"Connection":      []string{"Keep-Alive"},
 	}
 	req.Host = host
-	// overwrite the RequestURI path explicitly
-	// req.URL.Path = pathWithQuery
-	// req.URL.RawQuery = "" // already included
 
 	bw := bufio.NewWriter(rw)
 	if err := req.Write(bw); err != nil {

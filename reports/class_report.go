@@ -9,22 +9,23 @@ import (
 
 	"git.sr.ht/~nullevoid/octanepoints/configuration"
 	"git.sr.ht/~nullevoid/octanepoints/database"
+	"git.sr.ht/~nullevoid/octanepoints/parser"
 )
 
 var classReportTmpl = template.Must(
 	template.New("class_report.tmpl").
 		Funcs(template.FuncMap{
-			"fmtDur": fmtDur,
-			"pad":    Pad,
-			"padNum": PadNum,
+			"fmtDur": parser.FmtDuration,
+			"pad":    pad,
+			"padNum": padNum,
 		}).
 		ParseFS(tmplFS, "templates/class_report.tmpl"),
 )
 
 type ClassPointsRow struct {
-	RallyID  uint64
-	ClassID  uint64
-	UserID   uint64
+	RallyID  int64
+	ClassID  int64
+	UserID   int64
 	UserName string
 	Time3    time.Duration
 	Pos      int64
@@ -37,12 +38,12 @@ type ClassTable struct {
 }
 
 type RallySection struct {
-	RallyID uint64
+	RallyID int64
 	Classes []ClassTable
 }
 
 type ChampDriverRow struct {
-	UserID      uint64
+	UserID      int64
 	UserName    string
 	TotalPoints int64
 	Pos         int64
@@ -60,9 +61,7 @@ type ClassReportData struct {
 
 // ExportClassReport generates class tables for a single rally (rallyIDStr)
 // AND championship totals across all rallies, then writes class_report.md.
-func ExportClassReport(rallyIDStr string, store *database.Store, cfg *configuration.Config) error {
-	rallyID := database.ParseStringToUint(rallyIDStr)
-
+func ExportClassReport(rallyID int64, store *database.Store, cfg *configuration.Config) error {
 	// 1) Class lookup
 	classLookup, err := database.GetClasses(store)
 	if err != nil {
@@ -70,7 +69,7 @@ func ExportClassReport(rallyIDStr string, store *database.Store, cfg *configurat
 	}
 
 	// 2) Ranked rows for THIS rally
-	rallyRanked, err := database.FetchRankedRows(store, &database.QueryOpts{
+	rallyRanked, err := database.GetRankedRows(store, &database.QueryOpts{
 		RallyId: rallyID,
 	})
 	if err != nil {
@@ -85,7 +84,7 @@ func ExportClassReport(rallyIDStr string, store *database.Store, cfg *configurat
 	}
 
 	// 3) Ranked rows for ALL rallies (for championship totals)
-	allRanked, err := database.FetchRankedRows(store, nil)
+	allRanked, err := database.GetRankedRows(store, nil)
 	if err != nil {
 		return fmt.Errorf("fetch all ranks: %w", err)
 	}
@@ -97,10 +96,18 @@ func ExportClassReport(rallyIDStr string, store *database.Store, cfg *configurat
 		Rally:        rallySection,
 		Championship: champ,
 	}
-	return renderMarkdown(data)
-}
 
-// ----- Points & grouping logic -----
+	var buf bytes.Buffer
+	if err := classReportTmpl.Execute(&buf, data); err != nil {
+		return err
+	}
+
+	if err := writeMarkdown("class_summaries.md", buf); err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func applyPoints(ranked []database.RankedRow, scheme []int64) []ClassPointsRow {
 	out := make([]ClassPointsRow, len(ranked))
@@ -122,8 +129,8 @@ func applyPoints(ranked []database.RankedRow, scheme []int64) []ClassPointsRow {
 	return out
 }
 
-func groupTables(rows []ClassPointsRow, classLookup map[uint64]database.Class) []ClassTable {
-	byClass := map[uint64][]ClassPointsRow{}
+func groupTables(rows []ClassPointsRow, classLookup map[int64]database.Class) []ClassTable {
+	byClass := map[int64][]ClassPointsRow{}
 	for _, r := range rows {
 		byClass[r.ClassID] = append(byClass[r.ClassID], r)
 	}
@@ -140,10 +147,10 @@ func groupTables(rows []ClassPointsRow, classLookup map[uint64]database.Class) [
 	return out
 }
 
-func buildChampionship(rows []ClassPointsRow, classLookup map[uint64]database.Class) []ChampSection {
+func buildChampionship(rows []ClassPointsRow, classLookup map[int64]database.Class) []ChampSection {
 	type key struct {
-		ClassID uint64
-		UserID  uint64
+		ClassID int64
+		UserID  int64
 	}
 	acc := map[key]*ChampDriverRow{}
 	for _, r := range rows {
@@ -158,7 +165,7 @@ func buildChampionship(rows []ClassPointsRow, classLookup map[uint64]database.Cl
 	}
 
 	// regroup by class
-	byClass := map[uint64][]ChampDriverRow{}
+	byClass := map[int64][]ChampDriverRow{}
 	for k, v := range acc {
 		byClass[k.ClassID] = append(byClass[k.ClassID], *v)
 	}
@@ -177,43 +184,4 @@ func buildChampionship(rows []ClassPointsRow, classLookup map[uint64]database.Cl
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ClassName < out[j].ClassName })
 	return out
-}
-
-// ----- Templating -----
-
-func renderMarkdown(data any) error {
-	var buf bytes.Buffer
-	if err := classReportTmpl.Execute(&buf, data); err != nil {
-		return err
-	}
-
-	if err := writeMarkdown("class_summaries.md", buf); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// HH:MM:SS.ss (drop leading 0h)
-func fmtDur(d time.Duration) string {
-	neg := d < 0
-	if neg {
-		d = -d
-	}
-	h := int(d / time.Hour)
-	d -= time.Duration(h) * time.Hour
-	m := int(d / time.Minute)
-	d -= time.Duration(m) * time.Minute
-	s := float64(d) / float64(time.Second)
-
-	if h > 0 {
-		if neg {
-			return fmt.Sprintf("-%d:%02d:%05.2f", h, m, s)
-		}
-		return fmt.Sprintf("%d:%02d:%05.2f", h, m, s)
-	}
-	if neg {
-		return fmt.Sprintf("-%d:%05.2f", m, s)
-	}
-	return fmt.Sprintf("%d:%05.2f", m, s)
 }

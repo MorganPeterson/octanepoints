@@ -2,6 +2,8 @@ package database
 
 import (
 	"fmt"
+	"strings"
+	"text/template"
 
 	"git.sr.ht/~nullevoid/octanepoints/configuration"
 )
@@ -121,30 +123,8 @@ ORDER BY r.stage_num;
 `
 }
 
-func ClassRankForRallyQuery() string {
-	return `
-  WITH ranked AS (
-  SELECT
-    ro.rally_id,
-    ro.user_id,
-    ro.user_name,
-    ro.time3,
-    cc.class_id,
-    ROW_NUMBER() OVER (PARTITION BY ro.rally_id, cc.class_id ORDER BY ro.time3) AS pos
-  FROM rally_overalls ro
-  JOIN cars      c  ON c.id = ro.car_id
-  JOIN class_cars cc ON cc.car_id = c.id
-  WHERE ro.super_rally = 0  -- omit DNFs
-    AND ro.rally_id = ?
-)
-SELECT rally_id, class_id, user_id, user_name, time3, pos
-FROM ranked
-ORDER BY class_id, pos;
-`
-}
-
-func ClassRankForChampionshipQuery() string {
-	return `
+func FetchedRowsQuery(opts *QueryOpts) (string, error) {
+	base := `
 WITH ranked AS (
   SELECT
     ro.rally_id,
@@ -152,14 +132,31 @@ WITH ranked AS (
     ro.user_name,
     ro.time3,
     cc.class_id,
-    ROW_NUMBER() OVER (PARTITION BY ro.rally_id, cc.class_id ORDER BY ro.time3) AS pos
+    ROW_NUMBER() OVER (
+        PARTITION BY ro.rally_id, cc.class_id
+        ORDER BY ro.time3
+    ) AS pos
   FROM rally_overalls ro
-  JOIN cars c       ON c.id = ro.car_id
+  JOIN cars       c  ON c.id = ro.car_id
   JOIN class_cars cc ON cc.car_id = c.id
-  WHERE ro.super_rally = 0
+{{ if .RallyFilter }} WHERE ro.rally_id = ? {{ end }}
 )
 SELECT rally_id, class_id, user_id, user_name, time3, pos
 FROM ranked
 ORDER BY rally_id, class_id, pos;
 `
+
+	type qtpl struct {
+		RallyFilter bool
+	}
+
+	t := template.Must(template.New("q").Parse(base))
+	buf := &strings.Builder{}
+
+	err := t.Execute(buf, qtpl{RallyFilter: opts != nil})
+	if err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
 }

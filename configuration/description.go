@@ -7,11 +7,10 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
-// Config is the top‐level representation of your TOML file.
-// Add or remove fields / nested structs as your application requires.
-type Description struct {
+// RallyDescription represents the structure of a rally description TOML file.
+type RallyDescription struct {
 	Rally struct {
-		RallyId          uint64  `toml:"rallyId"`          // Unique identifier for the rally
+		RallyId          int64   `toml:"rallyId"`          // Unique identifier for the rally
 		Name             string  `toml:"name"`             // Name of the rally
 		Description      string  `toml:"description"`      // Description of the rally
 		Creator          string  `toml:"creator"`          // Creator of the rally
@@ -30,24 +29,13 @@ type Description struct {
 
 // LoadRally reads the TOML file at path, decodes into Description, and
 // applies any sensible defaults. It returns an error if parsing fails
-func LoadRally(path string) (*Description, error) {
-	desc, err := loadDescription(path)
-	if err != nil {
-		return nil, fmt.Errorf("loading rally description: %w", err)
-	}
-
-	return desc, nil
-}
-
-// LoadDescription reads the TOML file at path, decodes into Description, and
-// applies any sensible defaults. It returns an error if parsing fails
-func loadDescription(path string) (*Description, error) {
+func LoadRally(path string) (*RallyDescription, error) {
 	// Make sure file exists
 	if _, err := os.Stat(path); err != nil {
 		return nil, fmt.Errorf("rally file not found: %w", err)
 	}
 
-	var desc Description
+	var desc RallyDescription
 	if _, err := toml.DecodeFile(path, &desc); err != nil {
 		return nil, fmt.Errorf("parsing rally file: %w", err)
 	}

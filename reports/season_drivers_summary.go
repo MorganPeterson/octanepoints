@@ -12,9 +12,9 @@ var summaryTmpl = template.Must(
 	template.New("summary.tmpl").
 		Funcs(template.FuncMap{
 			"add":      add,
-			"pad":      Pad,
-			"padNum":   PadNum,
-			"padFloat": PadFloat,
+			"pad":      pad,
+			"padNum":   padNum,
+			"padFloat": padFloat,
 		}).
 		ParseFS(tmplFS, "templates/summary.tmpl"),
 )

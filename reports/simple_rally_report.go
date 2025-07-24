@@ -24,7 +24,7 @@ type ScoreRecord struct {
 }
 
 type SeasonsStandings struct {
-	UserId   uint64
+	UserId   int64
 	UserName string
 	Points   int64
 }
@@ -33,17 +33,14 @@ var reportTmpl = template.Must(
 	template.New("report.tmpl").
 		Funcs(template.FuncMap{
 			"add":      add,
-			"pad":      Pad,
-			"padNum":   PadNum,
-			"padFloat": PadFloat,
+			"pad":      pad,
+			"padNum":   padNum,
+			"padFloat": padFloat,
 		}).
 		ParseFS(tmplFS, "templates/report.tmpl"),
 )
 
-func ExportReport(rallyIdStr string, store *database.Store, config *configuration.Config) error {
-	// Parse the rally ID from the command line argument
-	rallyId := database.ParseStringToUint(rallyIdStr)
-
+func ExportReport(rallyId int64, store *database.Store, config *configuration.Config) error {
 	// Assign points to the overall results
 	scored, err := assignPointsOverall(rallyId, store, config)
 	if err != nil {
@@ -76,7 +73,7 @@ func ExportReport(rallyIdStr string, store *database.Store, config *configuratio
 
 // assignPointsOverall assigns points to each record based on the configured points system.
 func assignPointsOverall(
-	rallyId uint64, store *database.Store, config *configuration.Config,
+	rallyId int64, store *database.Store, config *configuration.Config,
 ) ([]ScoreRecord, error) {
 	// Fetch the overall results from the database
 	overallData, err := database.GetRallyOverall(store, &database.QueryOpts{RallyId: rallyId})
@@ -106,7 +103,7 @@ func fetchChampionshipPoints(
 		return nil, fmt.Errorf("fetching overall records: %w", err)
 	}
 
-	standingsMap := make(map[uint64]*SeasonsStandings)
+	standingsMap := make(map[int64]*SeasonsStandings)
 	for _, r := range recs {
 		pos, err := strconv.Atoi(r.Position)
 		if err != nil || pos < 1 || pos > len(config.General.Points) {

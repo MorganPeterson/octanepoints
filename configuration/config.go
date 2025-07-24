@@ -24,6 +24,19 @@ type Config struct {
 	} `toml:"general"` // Nested struct for general configuration
 }
 
+// validate sets defaults and enforces required fields.
+func (c *Config) validate() error {
+	if len(c.General.Points) == 0 {
+		c.General.Points = defaultPoints // Use default points if none specified
+	}
+
+	if len(c.General.ClassPoints) == 0 {
+		c.General.ClassPoints = defaultPoints // Use default class points if none specified
+	}
+
+	return nil
+}
+
 // Load reads the TOML file at path, decodes into Config, and
 // applies any sensible defaults. It returns an error if parsing fails
 // or if required fields are missing.
@@ -38,11 +51,6 @@ func Load(path string) (*Config, error) {
 		return nil, fmt.Errorf("parsing config file: %w", err)
 	}
 
-	// Apply defaults and validation
-	if err := cfg.validate(); err != nil {
-		return nil, err
-	}
-
 	return &cfg, nil
 }
 
@@ -52,18 +60,11 @@ func MustLoad(path string) *Config {
 	if err != nil {
 		panic(fmt.Sprintf("failed to load config: %+v", err))
 	}
+
+	// Apply defaults and validation
+	if err := cfg.validate(); err != nil {
+		panic(fmt.Sprintf("failed to load config: %+v", err))
+	}
+
 	return cfg
-}
-
-// validate sets defaults and enforces required fields.
-func (c *Config) validate() error {
-	if len(c.General.Points) == 0 {
-		c.General.Points = defaultPoints // Use default points if none specified
-	}
-
-	if len(c.General.ClassPoints) == 0 {
-		c.General.ClassPoints = defaultPoints // Use default class points if none specified
-	}
-
-	return nil
 }

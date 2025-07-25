@@ -3,6 +3,7 @@ package database
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"time"
 
@@ -13,6 +14,10 @@ import (
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 )
+
+type CarsWrapper struct {
+	Cars []Cars `json:"cars"`
+}
 
 // Store wraps your GORM DB instance.
 type Store struct {
@@ -110,11 +115,14 @@ func seedClassesAndMembers(db *gorm.DB, config *configuration.Config) error {
 			return fmt.Errorf("upserting classes: %w", err)
 		}
 
-		// Build a map[slug]classID
+		// Build a map[slug]classID & a map[name]slug
 		var dbCls []Class
 		slugs := make([]string, 0, len(config.Classes))
+		nameToSlug := make(map[string]string, len(config.Classes))
 		for _, c := range config.Classes {
-			slugs = append(slugs, parser.Slugify(c.Name))
+			slug := parser.Slugify(c.Name)
+			nameToSlug[c.Name] = slug
+			slugs = append(slugs, slug)
 		}
 
 		if err := tx.Where("slug IN ?", slugs).Find(&dbCls).Error; err != nil {
@@ -123,26 +131,29 @@ func seedClassesAndMembers(db *gorm.DB, config *configuration.Config) error {
 
 		slugToID := make(map[string]int64, len(dbCls))
 		for _, c := range dbCls {
-			slugToID[parser.Slugify(c.Name)] = c.ID
+			slugToID[nameToSlug[c.Name]] = c.ID
 		}
 
 		// for each class, upsert ClassCar rows
 		var catJoins []ClassCar
+		categories := []string{}
 		for _, c := range config.Classes {
-			cid := slugToID[parser.Slugify(c.Name)]
 			for _, cat := range c.Categories {
-				// find all cars in that category
-				var cars []Cars
-				if err := tx.Where("category = ?", cat).Find(&cars).Error; err != nil {
-					return fmt.Errorf("finding cars: %w", err)
-				}
-				for _, car := range cars {
-					catJoins = append(catJoins, ClassCar{
-						ClassID: cid,
-						CarID:   car.ID,
-					})
-				}
+				categories = append(categories, cat) // collect unique categories
 			}
+		}
+
+		// find all cars in that category
+		var cars []Cars
+		if err := tx.Where("category IN ?", categories).Find(&cars).Error; err != nil {
+			return fmt.Errorf("finding cars: %w", err)
+		}
+
+		for _, car := range cars {
+			catJoins = append(catJoins, ClassCar{
+				ClassID: slugToID[nameToSlug[car.Category]],
+				CarID:   car.ID,
+			})
 		}
 		if len(catJoins) > 0 {
 			if err := tx.Clauses(clause.OnConflict{
@@ -156,7 +167,7 @@ func seedClassesAndMembers(db *gorm.DB, config *configuration.Config) error {
 		// upsert ClassDriver rows
 		var drvJoins []ClassDriver
 		for _, c := range config.Classes {
-			cid := slugToID[parser.Slugify(c.Name)]
+			cid := slugToID[nameToSlug[c.Name]]
 			for _, uname := range c.Drivers {
 				// look up UserId from your last import (RallyOverall table)
 				var ro RallyOverall
@@ -164,6 +175,7 @@ func seedClassesAndMembers(db *gorm.DB, config *configuration.Config) error {
 					Where("user_name = ?", uname).
 					Order("rally_id DESC").
 					First(&ro).Error; err != nil {
+					log.Printf("skipping unknown driver %q", uname)
 					continue // skip if unknown driver
 				}
 				drvJoins = append(drvJoins, ClassDriver{
@@ -192,9 +204,7 @@ func seedFromJSON(db *gorm.DB, path string) error {
 		return err
 	}
 
-	var wrapper struct {
-		Cars []Cars `json:"cars"`
-	}
+	var wrapper CarsWrapper
 	if err := json.Unmarshal(raw, &wrapper); err != nil {
 		return err
 	}
@@ -223,14 +233,12 @@ func seedFromJSON(db *gorm.DB, path string) error {
 		} else {
 			// Ensure IDs are loaded if they already exist
 			for i := range wrapper.Cars {
-				var id int64
-				if err := tx.Model(&Cars{}).
-					Select("id").
-					Where("rsfid = ?", wrapper.Cars[i].RSFID).
-					Scan(&id).Error; err != nil {
+				// var id int64
+				var car Cars
+				if err := tx.Where("rsfid = ?", wrapper.Cars[i].RSFID).First(&car).Error; err != nil {
 					return err
 				}
-				wrapper.Cars[i].ID = id
+				wrapper.Cars[i].ID = car.ID
 			}
 		}
 

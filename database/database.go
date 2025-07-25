@@ -49,7 +49,7 @@ func GetDriversRallySummary(store *Store, opts *QueryOpts) ([]RallyOverall, erro
 // GetDriverStages fetches the stages for drivers in a rally from the database.
 func GetDriverStages(store *Store, rallyId int64, userName string) ([]StageSummary, error) {
 	var stages []StageSummary
-	err := store.DB.Raw(DriverStagesQuery(), rallyId, userName).Scan(&stages).Error
+	err := store.DB.Raw(DriverStagesQuery(), rallyId, userName).Find(&stages).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch stages summary for %s: %w", userName, err)
 	}
@@ -171,11 +171,24 @@ func setOverall(rallyId int64, store *Store, config *configuration.Config) error
 		return err
 	}
 
+	var allCars []Cars
+	if err := store.DB.Find(&allCars).Error; err != nil {
+		return fmt.Errorf("failed to preload all cars: %w", err)
+	}
+	carMap := make(map[string]Cars, len(allCars))
+	for _, car := range allCars {
+		carMap[car.Slug] = car
+	}
+
+	var recs []RallyOverall
 	for _, row := range r[1:] { // skip header row
-		// #;userid;user_name;real_name;nationality;car;time3;super_rally;penalty
+		// CSV columns: #;userid;user_name;real_name;nationality;car;time3;super_rally;penalty
 		// split car into name and brand based off of the first space in the string
-		var car Cars
 		carSlug := parser.Slugify(row[5])
+		car, ok := carMap[carSlug]
+		if !ok {
+			return fmt.Errorf("car %s not found in database", carSlug)
+		}
 		err = store.DB.Where("slug = ?", carSlug).Find(&car).Error
 		if err != nil {
 			return fmt.Errorf("failed to find car %s: %w", carSlug, err)
@@ -195,10 +208,13 @@ func setOverall(rallyId int64, store *Store, config *configuration.Config) error
 			Penalty:     parser.StringToFloat(row[8]),
 		}
 
-		if err := store.DB.Create(&rec).Error; err != nil {
-			return fmt.Errorf("storing record in database: %w", err)
-		}
+		recs = append(recs, rec)
 	}
+
+	if err := store.DB.Create(&recs).Error; err != nil {
+		return fmt.Errorf("batch insert rally overall records in database: %w", err)
+	}
+
 	return nil
 }
 
@@ -206,6 +222,9 @@ func setOverall(rallyId int64, store *Store, config *configuration.Config) error
 func setRally(rallyId int64, store *Store, config *configuration.Config) error {
 	rallyPath := fmt.Sprintf("%s/%d/%d.toml", config.General.DescriptionDir, rallyId, rallyId)
 	desc, err := configuration.LoadRally(rallyPath)
+	if err != nil {
+		return fmt.Errorf("loading rally description: %w", err)
+	}
 
 	// Convert the loaded description into a Rally struct
 	rally := &Rally{
@@ -237,10 +256,6 @@ func setRally(rallyId int64, store *Store, config *configuration.Config) error {
 		rally.EndAt = endAt
 	}
 
-	if err != nil {
-		return fmt.Errorf("loading rally description: %w", err)
-	}
-
 	// Store the rally information in the database
 	if err := store.DB.Create(rally).Error; err != nil {
 		return fmt.Errorf("storing rally in database: %w", err)
@@ -257,7 +272,11 @@ func setStages(rallyId int64, store *Store, config *configuration.Config) error 
 		return err
 	}
 
+	var recs []RallyStage
 	for _, row := range r[1:] { // skip header row
+		if len(row) < 16 {
+			return fmt.Errorf("malformed row (len=%d): %v", len(row), row)
+		}
 		rec := RallyStage{
 			RallyId:        rallyId,
 			StageNum:       parser.StringToInt(row[0]),
@@ -278,9 +297,11 @@ func setStages(rallyId int64, store *Store, config *configuration.Config) error 
 			Comments:       row[15],
 		}
 
-		if err := store.DB.Create(&rec).Error; err != nil {
-			return fmt.Errorf("storing record in database: %w", err)
-		}
+		recs = append(recs, rec)
+	}
+
+	if err := store.DB.Create(&recs).Error; err != nil {
+		return fmt.Errorf("batch insert rally stage records in database: %w", err)
 	}
 
 	return nil

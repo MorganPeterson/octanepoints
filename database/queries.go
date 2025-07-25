@@ -8,8 +8,60 @@ import (
 	"git.sr.ht/~nullevoid/octanepoints/configuration"
 )
 
+var (
+	driverClassTmpl = template.Must(template.New("q_driver").Parse(`
+  WITH driver_classes AS (
+  SELECT
+    ro.rally_id,
+    ro.user_id,
+    ro.user_name,
+    ro.time3,
+    cd.class_id
+  FROM rally_overalls ro
+  JOIN class_drivers cd ON cd.user_id = ro.user_id
+{{ if .RallyFilter }} WHERE ro.rally_id = ? {{ end }}
+),
+ranked AS (
+  SELECT
+    dc.rally_id, dc.class_id, dc.user_id, dc.user_name, dc.time3,
+    ROW_NUMBER() OVER (PARTITION BY dc.rally_id, dc.class_id ORDER BY dc.time3) AS pos
+  FROM driver_classes dc
+)
+
+SELECT
+  r.rally_id,
+  r.class_id,
+  r.user_id,
+  r.user_name,
+  r.pos
+FROM ranked r
+ORDER BY r.rally_id, r.class_id, r.pos;
+`))
+	classCarTmpl = template.Must(template.New("q_class").Parse(`WITH ranked AS (
+  SELECT
+    ro.rally_id,
+    ro.user_id,
+    ro.user_name,
+    ro.time3,
+    cc.class_id,
+    ROW_NUMBER() OVER (
+        PARTITION BY ro.rally_id, cc.class_id
+        ORDER BY ro.time3
+    ) AS pos
+  FROM rally_overalls ro
+  JOIN cars       c  ON c.id = ro.car_id
+  JOIN class_cars cc ON cc.car_id = c.id
+{{ if .RallyFilter }} WHERE ro.rally_id = ? {{ end }}
+)
+SELECT rally_id, class_id, user_id, user_name, time3, pos
+FROM ranked
+ORDER BY rally_id, class_id, pos;
+`))
+)
+
 func GetSeasonSummaryQuery(config *configuration.Config) string {
-	part_one := `
+	var b strings.Builder
+	b.WriteString(`
     SELECT
       ro.user_name,
       ro.nationality,
@@ -46,13 +98,13 @@ func GetSeasonSummaryQuery(config *configuration.Config) string {
       -- championship points per rally (adjust values as you prefer)
       (SELECT SUM(
          CASE CAST(ro2.position AS INTEGER)
-	`
+	`)
 
 	for i, points := range config.General.Points {
-		part_one += fmt.Sprintf("WHEN %d THEN %d ", i+1, points)
+		fmt.Fprintf(&b, "WHEN %d THEN %d ", i+1, points)
 	}
 
-	part_one += `
+	b.WriteString(`
            ELSE 0
          END
        )
@@ -63,9 +115,9 @@ func GetSeasonSummaryQuery(config *configuration.Config) string {
     FROM rally_overalls ro
     GROUP BY ro.user_name, ro.nationality
     ORDER BY ro.user_name;
-    `
+    `)
 
-	return part_one
+	return b.String()
 }
 
 func DriverStagesQuery() string {
@@ -124,71 +176,20 @@ ORDER BY r.stage_num;
 }
 
 func FetchedRowsQuery(opts *QueryOpts) (string, error) {
-	var base string
+	var tmpl *template.Template
 	if opts.Type != nil && *opts.Type == DRIVER_CLASS {
-		base = `
-  WITH driver_classes AS (
-  SELECT
-    ro.rally_id,
-    ro.user_id,
-    ro.user_name,
-    ro.time3,
-    cd.class_id
-  FROM rally_overalls ro
-  JOIN class_drivers cd ON cd.user_id = ro.user_id
-{{ if .RallyFilter }} WHERE ro.rally_id = ? {{ end }}
-),
-ranked AS (
-  SELECT
-    dc.rally_id, dc.class_id, dc.user_id, dc.user_name, dc.time3,
-    ROW_NUMBER() OVER (PARTITION BY dc.rally_id, dc.class_id ORDER BY dc.time3) AS pos
-  FROM driver_classes dc
-)
-
-SELECT
-  r.rally_id,
-  r.class_id,
-  r.user_id,
-  r.user_name,
-  r.pos
-FROM ranked r
-ORDER BY r.rally_id, r.class_id, r.pos;
-`
+		tmpl = driverClassTmpl
 	} else {
-		base = `
-WITH ranked AS (
-  SELECT
-    ro.rally_id,
-    ro.user_id,
-    ro.user_name,
-    ro.time3,
-    cc.class_id,
-    ROW_NUMBER() OVER (
-        PARTITION BY ro.rally_id, cc.class_id
-        ORDER BY ro.time3
-    ) AS pos
-  FROM rally_overalls ro
-  JOIN cars       c  ON c.id = ro.car_id
-  JOIN class_cars cc ON cc.car_id = c.id
-{{ if .RallyFilter }} WHERE ro.rally_id = ? {{ end }}
-)
-SELECT rally_id, class_id, user_id, user_name, time3, pos
-FROM ranked
-ORDER BY rally_id, class_id, pos;
-`
+		tmpl = classCarTmpl
 	}
 
 	type qtpl struct {
 		RallyFilter bool
 	}
 
-	t := template.Must(template.New("q").Parse(base))
 	buf := &strings.Builder{}
 
-	err := t.Execute(buf, qtpl{RallyFilter: opts.RallyId != nil})
-	if err != nil {
-		return "", err
-	}
+	err := tmpl.Execute(buf, qtpl{RallyFilter: opts.RallyId != nil})
 
-	return buf.String(), nil
+	return buf.String(), err
 }

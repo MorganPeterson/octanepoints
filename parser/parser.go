@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+var slugRegex = regexp.MustCompile(`[^a-z0-9]+`)
+
 func RealTime(val string) time.Time {
 	FinishRealTime, err := time.Parse("2006-01-02 15:04:05", val)
 	if err != nil {
@@ -46,65 +48,38 @@ func FmtDuration(d time.Duration) string {
 // HMS parses a string in "MM:SS.sss" or "HH:MM:SS.sss" format into a time.Duration.
 // It returns an error if the format is invalid.
 func HMS(s string) time.Duration {
-	parts := strings.Split(s, ":")
-	var (
-		h, m int
-		secF float64
-		err  error
-	)
+	var h, m int
+	var sec float64
 
-	switch len(parts) {
-	case 2:
+	var duration time.Duration
+	var err error
+
+	switch strings.Count(s, ":") {
+	case 1:
 		// MM:SS.sss
-		m, err = strconv.Atoi(parts[0])
-		if err != nil {
-			log.Printf("invalid minutes: %+v", err)
-			return 0
-		}
-		secF, err = strconv.ParseFloat(parts[1], 64)
-		if err != nil {
-			log.Printf("invalid seconds: %+v", err)
-			return 0
-		}
-
-	case 3:
+		_, err = fmt.Sscanf(s, "%d:%f", &m, &sec)
+	case 2:
 		// HH:MM:SS.sss
-		h, err = strconv.Atoi(parts[0])
-		if err != nil {
-			log.Printf("invalid hours: %v", err)
-			return 0
-		}
-		m, err = strconv.Atoi(parts[1])
-		if err != nil {
-			log.Printf("invalid minutes: %+v", err)
-			return 0
-		}
-		secF, err = strconv.ParseFloat(parts[2], 64)
-		if err != nil {
-			log.Printf("invalid seconds: %+v", err)
-			return 0
-		}
-
+		_, err = fmt.Sscanf(s, "%d:%d:%f", &h, &m, &sec)
 	default:
 		log.Printf("invalid time format %q", s)
 		return 0
 	}
 
-	// build duration
-	return time.Duration(h)*time.Hour +
-		time.Duration(m)*time.Minute +
-		time.Duration(secF*float64(time.Second))
+	if err != nil {
+		log.Printf("invalid HMS value %q: %v", s, err)
+		return 0
+	}
+
+	duration += time.Duration(h) * time.Hour
+	duration += time.Duration(m) * time.Minute
+	duration += time.Duration(sec * float64(time.Second))
+
+	return duration
 }
 
 func StringToBool(s string) bool {
-	var value bool
-	switch s {
-	case "1":
-		value = true
-	default:
-		value = false
-	}
-	return value
+	return s == "1"
 }
 
 func StringToFloat(s string) float64 {
@@ -133,7 +108,6 @@ func StringToInt(s string) int64 {
 func Slugify(s string) string {
 	s = strings.ToLower(strings.TrimSpace(s))
 	// replace all non-alphanum with '-'
-	re := regexp.MustCompile(`[^a-z0-9]+`)
-	s = re.ReplaceAllString(s, "-")
+	s = slugRegex.ReplaceAllString(s, "-")
 	return strings.Trim(s, "-")
 }

@@ -37,7 +37,7 @@ func CreateRally(rallyId int64, config *configuration.Config, store *Store) erro
 func GetDriversRallySummary(store *Store, opts *QueryOpts) ([]RallyOverall, error) {
 	var recs []RallyOverall
 	err := store.DB.Order("time3 asc").
-		Where("rally_id = ? AND time3 > 0", opts.RallyId).
+		Where("rally_id = ? AND time3 > 0", *opts.RallyId).
 		Find(&recs).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch driver rally summary: %w", err)
@@ -63,7 +63,7 @@ func GetRallyOverall(store *Store, opts *QueryOpts) ([]RallyOverall, error) {
 	var recs []RallyOverall
 
 	if opts != nil {
-		err := store.DB.Order("time3 asc").Where("rally_id = ?", opts.RallyId).Find(&recs).Error
+		err := store.DB.Order("time3 asc").Where("rally_id = ?", *opts.RallyId).Find(&recs).Error
 		if err != nil {
 			return nil, fmt.Errorf("fetching overall records: %w", err)
 		}
@@ -88,8 +88,8 @@ func GetRankedRows(store *Store, opts *QueryOpts) ([]RankedRow, error) {
 	}
 
 	var args []any
-	if opts != nil {
-		args = append(args, opts.RallyId)
+	if opts.RallyId != nil {
+		args = append(args, *opts.RallyId)
 	}
 
 	if err := store.DB.Raw(sql, args...).Scan(&rows).Error; err != nil {

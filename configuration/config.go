@@ -11,17 +11,31 @@ var defaultPoints = []int64{
 	32, 28, 25, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,
 }
 
+type ClassConfig struct {
+	Name        string   `toml:"name"`        // Class name, e.g. "Pro"
+	Slug        string   `toml:"slug"`        // Slug for the class
+	Description string   `toml:"description"` // Description of the class
+	Categories  []string `toml:"categories"`  // Categories for this class
+	Drivers     []string `toml:"drivers"`     // Drivers in this class
+}
+
+type DatabaseConfig struct {
+	Name string `toml:"name"` // Database name, e.g. "octanepoints.db"
+}
+
+type GeneralConfig struct {
+	Points         []int64 `toml:"points"`         // Overall points for drivers
+	ClassPoints    []int64 `toml:"classPoints"`    // Points for each class
+	ClassesType    string  `toml:"classesType"`    // Type of classes, e.g. "car" or "driver"
+	DescriptionDir string  `toml:"descriptionDir"` // Directory for rally descriptions, e.g. "rallies"
+}
+
 // Config is the top‐level representation of your TOML file.
 // Add or remove fields / nested structs as your application requires.
 type Config struct {
-	Database struct {
-		Name string `toml:"name"` // e.g. "octanepoints.db"
-	} `toml:"database"` // Nested struct for database configuration
-	General struct {
-		Points         []int64 `toml:"points"`         // Overall points for drivers
-		ClassPoints    []int64 `toml:"classPoints"`    // Points for classes
-		DescriptionDir string  `toml:"descriptionDir"` // Directory for rally descriptions, e.g. "rallies"
-	} `toml:"general"` // Nested struct for general configuration
+	Database DatabaseConfig `toml:"database"` // Nested struct for database configuration
+	General  GeneralConfig  `toml:"general"`  // Nested struct for general configuration
+	Classes  []ClassConfig  `toml:"classes"`  // Slice of classes with their own points
 }
 
 // validate sets defaults and enforces required fields.
@@ -33,7 +47,6 @@ func (c *Config) validate() error {
 	if len(c.General.ClassPoints) == 0 {
 		c.General.ClassPoints = defaultPoints // Use default class points if none specified
 	}
-
 	return nil
 }
 

@@ -27,6 +27,11 @@ type ClassCar struct {
 	CarID   int64 `gorm:"primaryKey;index:idx_cc_car_id"`   // Car ID
 }
 
+type ClassDriver struct {
+	ClassID int64 `gorm:"primaryKey;index:idx_cd_class_id"` // Class ID
+	UserId  int64 `gorm:"primaryKey;index:idx_cd_driver"`   // Driver name
+}
+
 // DriverSummary holds all of the 10 summary metrics.
 type DriverSummary struct {
 	UserName                string  `gorm:"column:user_name"`
@@ -41,8 +46,16 @@ type DriverSummary struct {
 	TotalChampionshipPoints int64   `gorm:"column:total_championship_points"`
 }
 
+type ClassType int
+
+const (
+	CAR_CLASS ClassType = iota
+	DRIVER_CLASS
+)
+
 type QueryOpts struct {
-	RallyId int64 // Optional rally ID to filter by
+	RallyId *int64     // Optional rally ID to filter by
+	Type    *ClassType // Type of the query
 }
 
 // Rally represents a rally overview in the database.

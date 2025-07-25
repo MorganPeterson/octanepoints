@@ -81,12 +81,12 @@ func DriverRallyReport(rallyId int64, store *database.Store, config *configurati
 }
 
 func configSummaries(rallyId int64, store *database.Store) (DriverReportConfig, error) {
-	overall, err := database.GetRallyOverall(store, &database.QueryOpts{RallyId: rallyId})
+	overall, err := database.GetRallyOverall(store, &database.QueryOpts{RallyId: &rallyId})
 	if err != nil {
 		return DriverReportConfig{}, fmt.Errorf("no overall summary error=%v", err)
 	}
 
-	finishers, err := database.GetDriversRallySummary(store, &database.QueryOpts{RallyId: rallyId})
+	finishers, err := database.GetDriversRallySummary(store, &database.QueryOpts{RallyId: &rallyId})
 	if err != nil {
 		return DriverReportConfig{}, fmt.Errorf("no finishers error=%v", err)
 	}

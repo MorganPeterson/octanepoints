@@ -68,9 +68,17 @@ func ExportClassReport(rallyID int64, store *database.Store, cfg *configuration.
 		return fmt.Errorf("load classes: %w", err)
 	}
 
+	var classType database.ClassType
+	if cfg.General.ClassesType == "driver" {
+		classType = database.DRIVER_CLASS
+	} else {
+		classType = database.CAR_CLASS
+	}
+
 	// 2) Ranked rows for THIS rally
 	rallyRanked, err := database.GetRankedRows(store, &database.QueryOpts{
-		RallyId: rallyID,
+		RallyId: &rallyID,
+		Type:    &classType,
 	})
 	if err != nil {
 		return fmt.Errorf("fetch rally ranks: %w", err)
@@ -84,7 +92,9 @@ func ExportClassReport(rallyID int64, store *database.Store, cfg *configuration.
 	}
 
 	// 3) Ranked rows for ALL rallies (for championship totals)
-	allRanked, err := database.GetRankedRows(store, nil)
+	allRanked, err := database.GetRankedRows(store, &database.QueryOpts{
+		Type: &classType,
+	})
 	if err != nil {
 		return fmt.Errorf("fetch all ranks: %w", err)
 	}

@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"git.sr.ht/~nullevoid/octanepoints/configuration"
 	"git.sr.ht/~nullevoid/octanepoints/parser"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -57,6 +58,7 @@ func (s *Store) Migrate() error {
 		&Cars{},
 		&Class{},
 		&ClassCar{},
+		&ClassDriver{},
 	); err != nil {
 		return fmt.Errorf("failed to migrate database: %w", err)
 	}
@@ -71,6 +73,11 @@ func (s *Store) Migrate() error {
 		}
 	}
 
+	err := seedClassesAndMembers(s.DB, configuration.MustLoad("config.toml"))
+	if err != nil {
+		return fmt.Errorf("seeding classes and members: %w", err)
+	}
+
 	return nil
 }
 
@@ -81,6 +88,100 @@ func (s *Store) Close() error {
 		return err
 	}
 	return sqlDB.Close()
+}
+
+func seedClassesAndMembers(db *gorm.DB, config *configuration.Config) error {
+	return db.Transaction(func(tx *gorm.DB) error {
+		// upsert all classes
+		cls := make([]Class, len(config.Classes))
+		for i, cc := range config.Classes {
+			cls[i] = Class{
+				Name:        cc.Name,
+				Slug:        parser.Slugify(cc.Name),
+				Description: cc.Description,
+				Active:      true,
+			}
+		}
+
+		if err := tx.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "slug"}},
+			DoNothing: true,
+		}).Create(&cls).Error; err != nil {
+			return fmt.Errorf("upserting classes: %w", err)
+		}
+
+		// Build a map[slug]classID
+		var dbCls []Class
+		slugs := make([]string, 0, len(config.Classes))
+		for _, c := range config.Classes {
+			slugs = append(slugs, parser.Slugify(c.Name))
+		}
+
+		if err := tx.Where("slug IN ?", slugs).Find(&dbCls).Error; err != nil {
+			return fmt.Errorf("finding classes: %w", err)
+		}
+
+		slugToID := make(map[string]int64, len(dbCls))
+		for _, c := range dbCls {
+			slugToID[parser.Slugify(c.Name)] = c.ID
+		}
+
+		// for each class, upsert ClassCar rows
+		var catJoins []ClassCar
+		for _, c := range config.Classes {
+			cid := slugToID[parser.Slugify(c.Name)]
+			for _, cat := range c.Categories {
+				// find all cars in that category
+				var cars []Cars
+				if err := tx.Where("category = ?", cat).Find(&cars).Error; err != nil {
+					return fmt.Errorf("finding cars: %w", err)
+				}
+				for _, car := range cars {
+					catJoins = append(catJoins, ClassCar{
+						ClassID: cid,
+						CarID:   car.ID,
+					})
+				}
+			}
+		}
+		if len(catJoins) > 0 {
+			if err := tx.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "class_id"}, {Name: "car_id"}},
+				DoNothing: true,
+			}).Create(&catJoins).Error; err != nil {
+				return fmt.Errorf("upserting class-car joins: %w", err)
+			}
+		}
+
+		// upsert ClassDriver rows
+		var drvJoins []ClassDriver
+		for _, c := range config.Classes {
+			cid := slugToID[parser.Slugify(c.Name)]
+			for _, uname := range c.Drivers {
+				// look up UserId from your last import (RallyOverall table)
+				var ro RallyOverall
+				if err := tx.Select("user_id").
+					Where("user_name = ?", uname).
+					Order("rally_id DESC").
+					First(&ro).Error; err != nil {
+					continue // skip if unknown driver
+				}
+				drvJoins = append(drvJoins, ClassDriver{
+					ClassID: cid,
+					UserId:  ro.UserId,
+				})
+			}
+		}
+		if len(drvJoins) > 0 {
+			if err := tx.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "class_id"}, {Name: "user_id"}},
+				DoNothing: true,
+			}).Create(&drvJoins).Error; err != nil {
+				return fmt.Errorf("upserting class-driver joins: %w", err)
+			}
+		}
+		return nil
+	})
 }
 
 // seedFromJSON reads a JSON file and uses that data to seed the Cars and Class

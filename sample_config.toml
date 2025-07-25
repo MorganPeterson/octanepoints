@@ -1,0 +1,22 @@
+[general]
+points = [32, 28, 25, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+classPoints = [32, 28, 25, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+classesType = "driver" # Options: "car", "driver"
+descriptionDir = "rallies"
+reportDir = "rally_reports"
+
+[database]
+name = "rally_data.db"
+
+# classes are optional but some reports (class specific) will not work
+[[classes]]
+name = "Gold"
+description = "Gold Class Drivers"
+categories = ["Group B", "Group 4"] # used if classType == "car"
+drivers = ["Fred Fast", "Chris Champion", "Frank Ferrari"] # used if classType == "driver"
+
+[[classes]]
+name = "Silver"
+description = "Silver Class Drivers"
+categories = ["Group R4", "Group N4"] # used if classType == "car"
+drivers = ["Amy Amatuer", "Niel Young", "Stever Silver"] # used if classType == "driver"

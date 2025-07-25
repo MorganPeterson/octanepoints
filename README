@@ -119,7 +119,8 @@ the data in the database.
 
 The scoring configuration uses TOML format. The config file should be named 
 `config.toml` and placed in the directory you are running the application in. A 
-configuration file example is included in the repo.
+configuration file example is included in the repo named `sample_config.toml`.
+You can rename that file to `config.toml` and change fields where necessary.
 
 ```toml
 [general]
@@ -130,7 +131,7 @@ descriptionDir = "rallies"
 reportDir = "rally_reports"
 
 [database]
-name = "octanepoints.db"
+name = "rally_data.db"
 
 # classes are optional but some reports (class specific) will not work
 [[classes]]

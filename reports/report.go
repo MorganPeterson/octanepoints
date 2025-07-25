@@ -6,12 +6,22 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"text/template"
 
+	"git.sr.ht/~nullevoid/octanepoints/parser"
 	"github.com/raykov/mdtopdf"
 )
 
 //go:embed templates/*.tmpl
 var tmplFS embed.FS
+
+var sharedFuncMap = template.FuncMap{
+	"add":      add,
+	"pad":      pad,
+	"padNum":   padNum,
+	"padFloat": padFloat,
+	"fmtDur":   parser.FmtDuration,
+}
 
 func add(a, b int) int { return a + b }
 
@@ -36,14 +46,16 @@ func pad(s string, w int) string {
 	if len(s) >= w {
 		return s[:w]
 	}
-	return s + string(bytes.Repeat([]byte(" "), w-len(s)))
+	return fmt.Sprintf("%-*s", w, s)
+	// return s + string(bytes.Repeat([]byte(" "), w-len(s)))
 }
 
 func padFloat(s string, w int) string {
 	if len(s) >= w {
 		return s
 	}
-	return string(bytes.Repeat([]byte(" "), w-len(s))) + s
+	return fmt.Sprintf("%*s", w, s)
+	// return string(bytes.Repeat([]byte(" "), w-len(s))) + s
 }
 
 func padNum(n int64, w int) string {
@@ -51,7 +63,8 @@ func padNum(n int64, w int) string {
 	if len(s) >= w {
 		return s
 	}
-	return string(bytes.Repeat([]byte(" "), w-len(s))) + s
+	return fmt.Sprintf("%*s", w, s)
+	// return string(bytes.Repeat([]byte(" "), w-len(s))) + s
 }
 
 func writeMarkdown(filename string, data bytes.Buffer) error {

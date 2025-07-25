@@ -3,7 +3,6 @@ package reports
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"text/template"
 	"time"
 
@@ -66,7 +65,7 @@ func DriverRallyReport(rallyId int64, store *database.Store, config *configurati
 	// Get stages summary for the rally
 	summaries, err := stagesSummary(rallyId, store)
 	if err != nil {
-		log.Fatalf("Failed to get stages summary: %v", err)
+		return fmt.Errorf("Failed to get stages summary: %v", err)
 	}
 
 	var buf bytes.Buffer

@@ -10,12 +10,7 @@ import (
 
 var summaryTmpl = template.Must(
 	template.New("summary.tmpl").
-		Funcs(template.FuncMap{
-			"add":      add,
-			"pad":      pad,
-			"padNum":   padNum,
-			"padFloat": padFloat,
-		}).
+		Funcs(sharedFuncMap).
 		ParseFS(tmplFS, "templates/summary.tmpl"),
 )
 

@@ -3,7 +3,6 @@ package reports
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"sort"
 	"strconv"
 	"text/template"
@@ -31,12 +30,7 @@ type SeasonsStandings struct {
 
 var reportTmpl = template.Must(
 	template.New("report.tmpl").
-		Funcs(template.FuncMap{
-			"add":      add,
-			"pad":      pad,
-			"padNum":   padNum,
-			"padFloat": padFloat,
-		}).
+		Funcs(sharedFuncMap).
 		ParseFS(tmplFS, "templates/report.tmpl"),
 )
 
@@ -44,13 +38,13 @@ func ExportReport(rallyId int64, store *database.Store, config *configuration.Co
 	// Assign points to the overall results
 	scored, err := assignPointsOverall(rallyId, store, config)
 	if err != nil {
-		log.Fatalf("Failed to assign points: %v", err)
+		return fmt.Errorf("Failed to assign points: %v", err)
 	}
 
 	// Fetch championship points
 	standings, err := fetchChampionshipPoints(store, config)
 	if err != nil {
-		log.Fatalf("Failed to fetch championship points: %v", err)
+		return fmt.Errorf("Failed to fetch championship points: %v", err)
 	}
 
 	// Prepare report data

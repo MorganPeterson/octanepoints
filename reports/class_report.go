@@ -9,16 +9,11 @@ import (
 
 	"git.sr.ht/~nullevoid/octanepoints/configuration"
 	"git.sr.ht/~nullevoid/octanepoints/database"
-	"git.sr.ht/~nullevoid/octanepoints/parser"
 )
 
 var classReportTmpl = template.Must(
 	template.New("class_report.tmpl").
-		Funcs(template.FuncMap{
-			"fmtDur": parser.FmtDuration,
-			"pad":    pad,
-			"padNum": padNum,
-		}).
+		Funcs(sharedFuncMap).
 		ParseFS(tmplFS, "templates/class_report.tmpl"),
 )
 

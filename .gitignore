@@ -3,3 +3,4 @@ octanepoints.db
 rallies/*
 *.md
 *.pdf
+config.toml

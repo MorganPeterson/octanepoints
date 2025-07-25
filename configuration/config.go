@@ -7,6 +7,8 @@ import (
 	"github.com/BurntSushi/toml"
 )
 
+const defaultReportDir = "season_reports" // Default directory for reports
+
 var defaultPoints = []int64{
 	32, 28, 25, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,
 }
@@ -28,6 +30,7 @@ type GeneralConfig struct {
 	ClassPoints    []int64 `toml:"classPoints"`    // Points for each class
 	ClassesType    string  `toml:"classesType"`    // Type of classes, e.g. "car" or "driver"
 	DescriptionDir string  `toml:"descriptionDir"` // Directory for rally descriptions, e.g. "rallies"
+	ReportDir      string  `toml:"reportDir"`      // Directory for reports, e.g. "reports"
 }
 
 // Config is the top‐level representation of your TOML file.
@@ -46,6 +49,9 @@ func (c *Config) validate() error {
 
 	if len(c.General.ClassPoints) == 0 {
 		c.General.ClassPoints = defaultPoints // Use default class points if none specified
+	}
+	if c.General.ReportDir == "" {
+		c.General.ReportDir = defaultReportDir // Use default report directory if none specified
 	}
 	return nil
 }

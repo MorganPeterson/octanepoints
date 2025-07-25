@@ -2,6 +2,7 @@ package grab
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"crypto/tls"
 	"crypto/x509"
@@ -13,6 +14,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/BurntSushi/toml"
 )
 
 const rallyCSVURLTmpl = "https://rallysimfans.hu/rbr/csv_export_beta.php?rally_id=%d"
@@ -44,59 +47,6 @@ func Grab(ctx context.Context, id int64) error {
 	}
 
 	return nil
-}
-
-func prepare(id int64) (Paths, error) {
-	p := Paths{Id: id}
-
-	p.Dir = filepath.Clean(filepath.Join(rallyDir, fmt.Sprintf("%d", p.Id)))
-	if err := os.MkdirAll(p.Dir, 0o755); err != nil {
-		return p, fmt.Errorf("failed to create directory %s: %w", p.Dir, err)
-	}
-
-	p.TOML = filepath.Join(p.Dir, fmt.Sprintf("%d.toml", p.Id))
-	if err := touch(p.TOML); err != nil {
-		return p, fmt.Errorf("failed to create TOML file %s: %w", p.TOML, err)
-	}
-
-	return p, nil
-}
-
-func overallDownload(ctx context.Context, p Paths) (string, error) {
-	// download the overall results
-	downloadPath := filepath.Join(p.Dir, fmt.Sprintf("%d%s", p.Id, overallFileName))
-
-	rawUrl := fmt.Sprintf(rallyCSVOverallTmpl, p.Id)
-	if err := download(ctx, rawUrl, downloadPath); err != nil {
-		return downloadPath, fmt.Errorf("failed to grab %s: %w", rawUrl, err)
-	}
-
-	return downloadPath, nil
-}
-
-func stagesDownload(ctx context.Context, p Paths) (string, error) {
-	// download the stages results
-	downloadPath := filepath.Join(p.Dir, fmt.Sprintf("%d%s", p.Id, stageFileName))
-
-	rawUrl := fmt.Sprintf(rallyCSVURLTmpl, p.Id)
-	if err := download(ctx, rawUrl, downloadPath); err != nil {
-		return downloadPath, fmt.Errorf("failed to grab %s: %w", rawUrl, err)
-	}
-
-	return downloadPath, nil
-}
-
-// touch creates the file if missing and updates its mtime/atime.
-func touch(path string) error {
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		return err
-	}
-	if err := f.Close(); err != nil {
-		return err
-	}
-	now := time.Now()
-	return os.Chtimes(path, now, now)
 }
 
 // download downloads a file from the specified URL and saves it to outPath.
@@ -210,4 +160,69 @@ func download(ctx context.Context, rawUrl string, outPath string) error {
 	}
 
 	return nil
+}
+
+func encodeRallyToml() []byte {
+	var buf = new(bytes.Buffer)
+	if err := toml.NewEncoder(buf).Encode(map[string]any{
+		"rally": map[string]any{
+			"rallyId":          0,
+			"name":             "rally name",
+			"description":      "description of rally",
+			"creator":          "John Doe",
+			"damageLevel":      "reduced",
+			"numberOfLegs":     3,
+			"superRally":       true,
+			"pacenotesOptions": "Normal Pacenotes",
+			"started":          0,
+			"finished":         0,
+			"totalDistance":    0.0,
+			"carGroups":        "Group A8, Group A7",
+			"startAt":          "2025-06-24 08:00",
+			"endAt":            "2025-07-01 08:00",
+		},
+	}); err != nil {
+		panic(err)
+	}
+	return buf.Bytes()
+}
+
+func overallDownload(ctx context.Context, p Paths) (string, error) {
+	// download the overall results
+	downloadPath := filepath.Join(p.Dir, fmt.Sprintf("%d%s", p.Id, overallFileName))
+
+	rawUrl := fmt.Sprintf(rallyCSVOverallTmpl, p.Id)
+	if err := download(ctx, rawUrl, downloadPath); err != nil {
+		return downloadPath, fmt.Errorf("failed to grab %s: %w", rawUrl, err)
+	}
+
+	return downloadPath, nil
+}
+
+func prepare(id int64) (Paths, error) {
+	p := Paths{Id: id}
+
+	p.Dir = filepath.Clean(filepath.Join(rallyDir, fmt.Sprintf("%d", p.Id)))
+	if err := os.MkdirAll(p.Dir, 0o755); err != nil {
+		return p, fmt.Errorf("failed to create directory %s: %w", p.Dir, err)
+	}
+
+	p.TOML = filepath.Join(p.Dir, fmt.Sprintf("%d.toml", p.Id))
+	if err := os.WriteFile(p.TOML, encodeRallyToml(), 0o644); err != nil {
+		return p, fmt.Errorf("failed to create TOML file %s: %w", p.TOML, err)
+	}
+
+	return p, nil
+}
+
+func stagesDownload(ctx context.Context, p Paths) (string, error) {
+	// download the stages results
+	downloadPath := filepath.Join(p.Dir, fmt.Sprintf("%d%s", p.Id, stageFileName))
+
+	rawUrl := fmt.Sprintf(rallyCSVURLTmpl, p.Id)
+	if err := download(ctx, rawUrl, downloadPath); err != nil {
+		return downloadPath, fmt.Errorf("failed to grab %s: %w", rawUrl, err)
+	}
+
+	return downloadPath, nil
 }

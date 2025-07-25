@@ -84,7 +84,6 @@ totalDistance = 151.1
 carGroups = "Super 2000, Group B"
 startAt = "2025-06-24 11:00"
 endAt = "2025-07-01 11:00"
-
 ```
 
 Your rallies directory will look something like this:
@@ -101,13 +100,15 @@ You are all set now to `create` the rally (which puts the data into the database
 and then run `points` to collect points on the rally.
 
 ```bash
-./octanepoints -create 12345 // will load rally 12345 data into the database
+./octanepoints -create 15234 // will load rally 15234 data into the database
 
-./octanepoints -report 12345 // will generate a report for rally 12345
+./octanepoints -report 15234 // will generate a report for rally 15234
 
 ./octanepoints -summary // will generate general stats for the whole season
 
-./octanepoints -driver 12345 // will generate individual driver stats for rally 12345
+./octanepoints -driver 15234 // will generate individual driver stats for rally 15234
+
+./octanepoints -class 15234 // will generate a class report for rally 15234
 ```
 
 Once a rally is "created" and loaded into the database, you will never have to 
@@ -123,17 +124,33 @@ configuration file example is included in the repo.
 ```toml
 [general]
 points = [32, 28, 25, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
-descriptionDir = "rallies"     // directory name that contains rally CSV files
+classPoints = [32, 28, 25, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
+classesType = "driver" # Options: "car", "driver"
+descriptionDir = "rallies"
+reportDir = "rally_reports"
 
 [database]
-name = "octanepoints.db" // name of the database file
+name = "octanepoints.db"
+
+# classes are optional but some reports (class specific) will not work
+[[classes]]
+name = "Gold"
+description = "Gold Class Drivers"
+categories = ["Group B", "Group 4"] # used if classType == "car"
+drivers = ["Fred Fast", "Chris Champion", "Frank Ferrari"] # used if classType == "driver"
+
+[[classes]]
+name = "Silver"
+description = "Silver Class Drivers"
+categories = ["Group R4", "Group N4"] # used if classType == "car"
+drivers = ["Amy Amatuer", "Niel Young", "Stever Silver"] # used if classType == "driver"
 ```
 
 ## Roadmap
 
     * Export to PDF
-    * Add ability to track points for classes, not just overall
-    * Add the ability to update a rally TOML file in program (perhaps automatically)
+    * Automate more of the directory and file CRUD
+    * Add the ability to update a rally description TOML file in program (perhaps automatically)
  
 ## License
 

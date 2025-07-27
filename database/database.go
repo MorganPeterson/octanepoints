@@ -5,6 +5,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"time"
 
@@ -149,7 +150,11 @@ func fetchCsv(path string, config *configuration.Config) ([][]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("getting current directory: %w", err)
 	}
-	filePath := fmt.Sprintf("%s/%s/%s", currentDir, config.General.DescriptionDir, path)
+	filePath := filepath.Join(
+		currentDir,
+		config.General.Directory,
+		config.Download.Directory,
+		path)
 
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -158,14 +163,21 @@ func fetchCsv(path string, config *configuration.Config) ([][]string, error) {
 	defer f.Close()
 
 	reader := csv.NewReader(f)
-	reader.Comma = ';'
+	if len(config.Download.Delimiter) != 1 {
+		return nil, fmt.Errorf("delimiter is not set in the configuration")
+	}
+	reader.Comma = rune(config.Download.Delimiter[0]) // Use the first character as the delimiter
 
 	return reader.ReadAll()
 }
 
 // SetOverall stores the overall results from the CSV file into the database.
 func setOverall(rallyId int64, store *Store, config *configuration.Config) error {
-	csvPath := fmt.Sprintf("%d/%d_All_table.csv", rallyId, rallyId)
+	csvPath := filepath.Join(
+		fmt.Sprintf("%d", rallyId),
+		fmt.Sprintf("%d_%s", rallyId, config.Download.OverallFileName),
+	)
+
 	r, err := fetchCsv(csvPath, config)
 	if err != nil {
 		return err
@@ -220,7 +232,18 @@ func setOverall(rallyId int64, store *Store, config *configuration.Config) error
 
 // setRally stores the rally information in the database.
 func setRally(rallyId int64, store *Store, config *configuration.Config) error {
-	rallyPath := fmt.Sprintf("%s/%d/%d.toml", config.General.DescriptionDir, rallyId, rallyId)
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getting current directory: %w", err)
+	}
+
+	rallyPath := filepath.Join(
+		currentDir,
+		config.General.Directory,
+		config.Download.Directory,
+		fmt.Sprintf("%d", rallyId),
+		fmt.Sprintf("%d.toml", rallyId),
+	)
 	desc, err := configuration.LoadRally(rallyPath)
 	if err != nil {
 		return fmt.Errorf("loading rally description: %w", err)
@@ -266,7 +289,10 @@ func setRally(rallyId int64, store *Store, config *configuration.Config) error {
 
 // setStages stores the stages from the CSV file into the database.
 func setStages(rallyId int64, store *Store, config *configuration.Config) error {
-	csvPath := fmt.Sprintf("%d/%d_table.csv", rallyId, rallyId)
+	csvPath := filepath.Join(
+		fmt.Sprintf("%d", rallyId),
+		fmt.Sprintf("%d_%s", rallyId, config.Download.StageFileName),
+	)
 	r, err := fetchCsv(csvPath, config)
 	if err != nil {
 		return err

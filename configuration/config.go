@@ -5,40 +5,95 @@ import (
 	"os"
 
 	"github.com/BurntSushi/toml"
+	"gorm.io/gorm"
 )
 
-const defaultReportDir = "season_reports" // Default directory for reports
+const (
+	defaultReportDir   = "season_reports" // Default directory for reports
+	defaultDataDir     = "data"           // Default directory for data
+	defaultDatabaseDir = "database"       // Default directory for database files
+	defaultDownloadDir = "rallies"        // Default directory for downloaded rally data
+	defaultDelimiter   = ";"              // Default CSV delimiter
+)
 
 var defaultPoints = []int64{
 	32, 28, 25, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,
 }
 
-type ClassConfig struct {
-	Name        string   `toml:"name"`        // Class name, e.g. "Pro"
-	Slug        string   `toml:"slug"`        // Slug for the class
-	Description string   `toml:"description"` // Description of the class
-	Categories  []string `toml:"categories"`  // Categories for this class
-	Drivers     []string `toml:"drivers"`     // Drivers in this class
-}
-
-type DatabaseConfig struct {
-	Name string `toml:"name"` // Database name, e.g. "octanepoints.db"
-}
-
-type GeneralConfig struct {
-	Points         []int64 `toml:"points"`         // Overall points for drivers
-	ClassPoints    []int64 `toml:"classPoints"`    // Points for each class
-	ClassesType    string  `toml:"classesType"`    // Type of classes, e.g. "car" or "driver"
-	DescriptionDir string  `toml:"descriptionDir"` // Directory for rally descriptions, e.g. "rallies"
-	ReportDir      string  `toml:"reportDir"`      // Directory for reports, e.g. "reports"
-}
-
-// Config is the top‐level representation of your TOML file.
-// Add or remove fields / nested structs as your application requires.
+// Config is just for TOML decoding; you typically won’t insert
+// this table directly.
 type Config struct {
-	Database DatabaseConfig `toml:"database"` // Nested struct for database configuration
-	General  GeneralConfig  `toml:"general"`  // Nested struct for general configuration
-	Classes  []ClassConfig  `toml:"classes"`  // Slice of classes with their own points
+	General  General  `toml:"general"`
+	Download Download `toml:"download"`
+	Report   Report   `toml:"report"`
+	Database Database `toml:"database"`
+	Classes  []Class  `toml:"classes"`
+}
+
+type ConfigMeta struct {
+	gorm.Model
+	FilePath string `gorm:"uniqueIndex;not null"` // Path to the TOML file
+	Checksum string `gorm:"not null"`             // Checksum of the TOML file
+}
+
+// General maps the [general] section.
+// Points and ClassPoints are stored as JSON in SQLite. :contentReference[oaicite:8]{index=8}
+type General struct {
+	gorm.Model
+	Points      []int64 `toml:"points"       gorm:"serializer:json"` // [32,28,…]
+	ClassPoints []int64 `toml:"classPoints"  gorm:"serializer:json"`
+	ClassesType string  `toml:"classesType"` // "driver"
+	Directory   string  `toml:"directory"`   // "data"
+}
+
+// Download maps the [download] section. :contentReference[oaicite:9]{index=9}
+type Download struct {
+	gorm.Model
+	RallyCSVURLTmpl     string `toml:"rallyCSVURLTmpl"`     // e.g. "https://…?rally_id=%d"
+	RallyCSVOverallTmpl string `toml:"rallyCSVOverallTmpl"` // e.g. "https://…?rally_id=%d&cg=7"
+	Directory           string `toml:"directory"`           // "rallies"
+	StageFileName       string `toml:"stageFileName"`       // "table.csv"
+	OverallFileName     string `toml:"overallFileName"`     // "All_table.csv"
+	Delimiter           string `toml:"delimiter"`           // ";"
+}
+
+// Report maps the [report] section, embedding its subtables.
+type Report struct {
+	Directory string        `toml:"directory"` // "rally_reports"
+	Class     ReportClass   `toml:"class"`
+	Points    ReportPoints  `toml:"points"`
+	Drivers   ReportDrivers `toml:"drivers"`
+}
+
+type ReportClass struct {
+	SummaryFilename string `toml:"summaryFilename"` // "class_summary"
+}
+
+type ReportPoints struct {
+	SummaryFileName string `toml:"summaryFileName"` // "points_summary"
+}
+
+type ReportDrivers struct {
+	SeasonSummaryFilename string `toml:"seasonSummaryFilename"` // "drivers_summary"
+	RallySummaryFilename  string `toml:"rallySummaryFilename"`  // "drivers_rally_summary"
+}
+
+// Database maps the [database] section. :contentReference[oaicite:14]{index=14}
+type Database struct {
+	gorm.Model
+	Name      string `toml:"name"`      // "season1.db"
+	Directory string `toml:"directory"` // "database"
+}
+
+// Class maps each [[classes]] entry.
+// name, description, categories, drivers :contentReference[oaicite:15]{index=15}
+// (categories and drivers stored as JSON arrays)
+type Class struct {
+	gorm.Model
+	Name        string   `toml:"name"`        // e.g. "Gold"
+	Description string   `toml:"description"` // e.g. "Gold Class Drivers"
+	Categories  []string `toml:"categories"`
+	Drivers     []string `toml:"drivers"`
 }
 
 // validate sets defaults and enforces required fields.
@@ -50,8 +105,20 @@ func (c *Config) validate() error {
 	if len(c.General.ClassPoints) == 0 {
 		c.General.ClassPoints = defaultPoints // Use default class points if none specified
 	}
-	if c.General.ReportDir == "" {
-		c.General.ReportDir = defaultReportDir // Use default report directory if none specified
+	if c.Report.Directory == "" {
+		c.Report.Directory = defaultReportDir // Use default report directory if none specified
+	}
+
+	if c.General.Directory == "" {
+		c.General.Directory = defaultDataDir // Use default data directory if none specified
+	}
+
+	if c.Download.Directory == "" {
+		c.Download.Directory = defaultDownloadDir // Use general directory as default for download
+	}
+
+	if c.Database.Directory == "" {
+		c.Database.Directory = defaultDatabaseDir // Use general directory as default for database
 	}
 	return nil
 }

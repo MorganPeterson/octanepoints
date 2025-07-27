@@ -2,11 +2,32 @@
 points = [32, 28, 25, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
 classPoints = [32, 28, 25, 22, 20, 18, 16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1]
 classesType = "driver" # Options: "car", "driver"
-descriptionDir = "rallies"
-reportDir = "rally_reports"
+directory = "data"
+
+[download]
+rallyCSVURLTmpl = "https://rallysimfans.hu/rbr/csv_export_beta.php?rally_id=%d"
+rallyCSVOverallTmpl = "https://rallysimfans.hu/rbr/csv_export_results.php?rally_id=%d&cg=7"
+directory = "rallies"
+stageFileName = "table.csv"
+overallFileName = "All_table.csv"
+delimiter = ";"
+
+[report]
+directory = "rally_reports"
+
+[report.class]
+summaryFilename = "class_summary"
+
+[report.points]
+summaryFileName = "points_summary"
+
+[report.drivers]
+seasonSummaryFilename = "drivers_summary"
+rallySummaryFilename = "drivers_rally_summary"
 
 [database]
-name = "rally_data.db"
+name = "season1.db"
+directory = "database"
 
 # classes are optional but some reports (class specific) will not work
 [[classes]]

@@ -2,6 +2,7 @@ package reports
 
 import (
 	"bytes"
+	"fmt"
 	"text/template"
 
 	"git.sr.ht/~nullevoid/octanepoints/configuration"
@@ -27,8 +28,12 @@ func ExportDriverSummaries(store *database.Store, config *configuration.Config) 
 		return err
 	}
 
-	if err := writeMarkdown("driver_summaries.md", buf); err != nil {
+	// create file name and write markdown
+	fileName := fmt.Sprintf("%s.%s", config.Report.Drivers.SeasonSummaryFilename, "md")
+
+	if err := writeMarkdown(fileName, buf, config); err != nil {
 		return err
 	}
+
 	return nil
 }

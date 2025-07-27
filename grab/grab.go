@@ -15,14 +15,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"git.sr.ht/~nullevoid/octanepoints/configuration"
 	"github.com/BurntSushi/toml"
 )
-
-const rallyCSVURLTmpl = "https://rallysimfans.hu/rbr/csv_export_beta.php?rally_id=%d"
-const rallyCSVOverallTmpl = "https://rallysimfans.hu/rbr/csv_export_results.php?rally_id=%d&cg=7"
-const rallyDir = "rallies"
-const stageFileName = "_table.csv"
-const overallFileName = "_All_table.csv"
 
 type Paths struct {
 	Id   int64  // rally ID
@@ -30,19 +25,19 @@ type Paths struct {
 	TOML string // path to the TOML file
 }
 
-func Grab(ctx context.Context, id int64) error {
-	p, err := prepare(id)
+func Grab(ctx context.Context, id int64, config *configuration.Config) error {
+	p, err := prepare(id, config)
 	if err != nil {
 		return fmt.Errorf("failed to prepare paths: %w", err)
 	}
 
 	// download the stages results
-	if _, err := stagesDownload(ctx, p); err != nil {
+	if _, err := stagesDownload(ctx, p, config); err != nil {
 		return fmt.Errorf("failed to download stages results: %w", err)
 	}
 
 	// download the overall results
-	if _, err := overallDownload(ctx, p); err != nil {
+	if _, err := overallDownload(ctx, p, config); err != nil {
 		return fmt.Errorf("failed to download overall results: %w", err)
 	}
 
@@ -187,11 +182,11 @@ func encodeRallyToml() []byte {
 	return buf.Bytes()
 }
 
-func overallDownload(ctx context.Context, p Paths) (string, error) {
+func overallDownload(ctx context.Context, p Paths, config *configuration.Config) (string, error) {
 	// download the overall results
-	downloadPath := filepath.Join(p.Dir, fmt.Sprintf("%d%s", p.Id, overallFileName))
+	downloadPath := filepath.Join(p.Dir, fmt.Sprintf("%d_%s", p.Id, config.Download.OverallFileName))
 
-	rawUrl := fmt.Sprintf(rallyCSVOverallTmpl, p.Id)
+	rawUrl := fmt.Sprintf(config.Download.RallyCSVOverallTmpl, p.Id)
 	if err := download(ctx, rawUrl, downloadPath); err != nil {
 		return downloadPath, fmt.Errorf("failed to grab %s: %w", rawUrl, err)
 	}
@@ -199,10 +194,20 @@ func overallDownload(ctx context.Context, p Paths) (string, error) {
 	return downloadPath, nil
 }
 
-func prepare(id int64) (Paths, error) {
+func prepare(id int64, config *configuration.Config) (Paths, error) {
 	p := Paths{Id: id}
 
-	p.Dir = filepath.Clean(filepath.Join(rallyDir, fmt.Sprintf("%d", p.Id)))
+	// get current directory
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return p, fmt.Errorf("getting current directory: %w", err)
+	}
+
+	p.Dir = filepath.Clean(
+		filepath.Join(
+			currentDir,
+			config.Download.Directory,
+			fmt.Sprintf("%d", p.Id)))
 	if err := os.MkdirAll(p.Dir, 0o755); err != nil {
 		return p, fmt.Errorf("failed to create directory %s: %w", p.Dir, err)
 	}
@@ -215,11 +220,11 @@ func prepare(id int64) (Paths, error) {
 	return p, nil
 }
 
-func stagesDownload(ctx context.Context, p Paths) (string, error) {
+func stagesDownload(ctx context.Context, p Paths, config *configuration.Config) (string, error) {
 	// download the stages results
-	downloadPath := filepath.Join(p.Dir, fmt.Sprintf("%d%s", p.Id, stageFileName))
+	downloadPath := filepath.Join(p.Dir, fmt.Sprintf("%d%s", p.Id, config.Download.StageFileName))
 
-	rawUrl := fmt.Sprintf(rallyCSVURLTmpl, p.Id)
+	rawUrl := fmt.Sprintf(config.Download.RallyCSVURLTmpl, p.Id)
 	if err := download(ctx, rawUrl, downloadPath); err != nil {
 		return downloadPath, fmt.Errorf("failed to grab %s: %w", rawUrl, err)
 	}

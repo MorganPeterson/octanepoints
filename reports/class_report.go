@@ -107,7 +107,9 @@ func ExportClassReport(rallyID int64, store *database.Store, cfg *configuration.
 		return err
 	}
 
-	if err := writeMarkdown("class_summaries.md", buf); err != nil {
+	// create file name and write markdown
+	fileName := fmt.Sprintf("%d_%s.%s", rallyID, cfg.Report.Class.SummaryFilename, "md")
+	if err := writeMarkdown(fileName, buf, cfg); err != nil {
 		return err
 	}
 

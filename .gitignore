@@ -1,6 +1,5 @@
 octanepoints
 octanepoints.db
 rallies/*
-*.md
-*.pdf
+data/*
 config.toml

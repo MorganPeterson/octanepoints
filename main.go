@@ -5,6 +5,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
+	"path/filepath"
 
 	"git.sr.ht/~nullevoid/octanepoints/configuration"
 	"git.sr.ht/~nullevoid/octanepoints/database"
@@ -32,22 +34,58 @@ func main() {
 
 	flag.Parse()
 
+	// Load the configuration
+	config := configuration.MustLoad(configPath)
+
+	err := ensureDir(config.General.Directory)
+	if err != nil {
+		log.Fatalf("Failed to ensure general directory exists: %v", err)
+	}
+
+	downloadDir := filepath.Join(config.General.Directory, config.Download.Directory)
+	reportDir := filepath.Join(config.General.Directory, config.Report.Directory)
+	databaseDir := filepath.Join(config.General.Directory, config.Database.Directory)
+
+	err = ensureDir(downloadDir)
+	if err != nil {
+		log.Fatalf("Failed to ensure download directory exists: %v", err)
+	}
+
+	err = ensureDir(reportDir)
+	if err != nil {
+		log.Fatalf("Failed to ensure description directory exists: %v", err)
+	}
+
+	err = ensureDir(databaseDir)
+	if err != nil {
+		log.Fatalf("Failed to ensure database directory exists: %v", err)
+	}
+
 	// get a single rally's data from the RSF rally page and download it
 	// This does not require the database to be set up or configuration to be
 	// loaded and so it is at the top of the main function.
 	if grabData != 0 {
-		if err := grab.Grab(context.Background(), grabData); err != nil {
+		if err := grab.Grab(context.Background(), grabData, config); err != nil {
 			log.Fatalf("Failed to grab rally data: %v", err)
 		}
 		log.Printf("Rally %d setup successfully.\n", grabData)
 		return
 	}
 
-	// Load the configuration
-	config := configuration.MustLoad(configPath)
+	// get current directory
+	currentDir, err := os.Getwd()
+	if err != nil {
+		log.Fatalf("Failed to get current directory: %v", err)
+	}
 
+	dbFilePath := filepath.Join(
+		currentDir,
+		config.General.Directory,
+		config.Database.Directory,
+		config.Database.Name,
+	)
 	// init database store
-	store, err := database.NewStore(config.Database.Name)
+	store, err := database.NewStore(dbFilePath)
 	if err != nil {
 		log.Fatalf("Failed to initialize database store: %v", err)
 	}
@@ -107,4 +145,11 @@ func main() {
 		fmt.Println("Class report exported to class_summaries.md")
 		return
 	}
+}
+
+func ensureDir(path string) error {
+	if err := os.MkdirAll(path, 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", path, err)
+	}
+	return nil
 }

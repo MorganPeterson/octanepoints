@@ -58,7 +58,10 @@ func ExportReport(rallyId int64, store *database.Store, config *configuration.Co
 		return err
 	}
 
-	if err := writeMarkdown("report.md", buf); err != nil {
+	// create file name and write markdown
+	fileName := fmt.Sprintf("%d_%s.%s", rallyId, config.Report.Points.SummaryFileName, "md")
+
+	if err := writeMarkdown(fileName, buf, config); err != nil {
 		return err
 	}
 

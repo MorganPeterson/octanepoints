@@ -5,9 +5,11 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/template"
 
+	"git.sr.ht/~nullevoid/octanepoints/configuration"
 	"git.sr.ht/~nullevoid/octanepoints/parser"
 	"github.com/raykov/mdtopdf"
 )
@@ -67,8 +69,19 @@ func padNum(n int64, w int) string {
 	// return string(bytes.Repeat([]byte(" "), w-len(s))) + s
 }
 
-func writeMarkdown(filename string, data bytes.Buffer) error {
-	f, err := os.Create(filename)
+func writeMarkdown(filename string, data bytes.Buffer, config *configuration.Config) error {
+	// get current directory
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getting current directory: %w", err)
+	}
+	reportPath := filepath.Join(
+		currentDir,
+		config.General.Directory,
+		config.Report.Directory,
+		filename,
+	)
+	f, err := os.Create(reportPath)
 	if err != nil {
 		return err
 	}

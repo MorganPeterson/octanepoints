@@ -72,8 +72,10 @@ func DriverRallyReport(rallyId int64, store *database.Store, config *configurati
 	if err := driverSummary.Execute(&buf, summaries); err != nil {
 		return err
 	}
+	// create file name and write markdown
+	fileName := fmt.Sprintf("%d_%s.%s", rallyId, config.Report.Drivers.RallySummaryFilename, "md")
 
-	if err := writeMarkdown("driver_summary.md", buf); err != nil {
+	if err := writeMarkdown(fileName, buf, config); err != nil {
 		return err
 	}
 	return nil
@@ -88,6 +90,10 @@ func configSummaries(rallyId int64, store *database.Store) (DriverReportConfig, 
 	finishers, err := database.GetDriversRallySummary(store, &database.QueryOpts{RallyId: &rallyId})
 	if err != nil {
 		return DriverReportConfig{}, fmt.Errorf("no finishers error=%v", err)
+	}
+
+	if len(finishers) == 0 {
+		return DriverReportConfig{}, fmt.Errorf("no finishers found for rally %d", rallyId)
 	}
 
 	totalDrivers := len(finishers)

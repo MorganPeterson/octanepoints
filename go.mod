@@ -4,6 +4,7 @@ go 1.24.5
 
 require (
 	github.com/BurntSushi/toml v1.5.0
+	github.com/goccy/go-json v0.10.5
 	github.com/raykov/mdtopdf v0.0.12
 	gorm.io/driver/sqlite v1.6.0
 	gorm.io/gorm v1.30.0

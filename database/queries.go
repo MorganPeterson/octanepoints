@@ -1,195 +1,106 @@
 package database
 
 import (
+	"database/sql"
+	"embed"
 	"fmt"
-	"strings"
-	"text/template"
+	"sort"
 
 	"git.sr.ht/~nullevoid/octanepoints/configuration"
+	"github.com/goccy/go-json"
 )
 
-var (
-	driverClassTmpl = template.Must(template.New("q_driver").Parse(`
-  WITH driver_classes AS (
-  SELECT
-    ro.rally_id,
-    ro.user_id,
-    ro.user_name,
-    ro.time3,
-    cd.class_id
-  FROM rally_overalls ro
-  JOIN class_drivers cd ON cd.user_id = ro.user_id
-{{ if .RallyFilter }} WHERE ro.rally_id = ? {{ end }}
-),
-ranked AS (
-  SELECT
-    dc.rally_id, dc.class_id, dc.user_id, dc.user_name, dc.time3,
-    ROW_NUMBER() OVER (PARTITION BY dc.rally_id, dc.class_id ORDER BY dc.time3) AS pos
-  FROM driver_classes dc
-)
+var _ embed.FS
 
-SELECT
-  r.rally_id,
-  r.class_id,
-  r.user_id,
-  r.user_name,
-  r.pos
-FROM ranked r
-ORDER BY r.rally_id, r.class_id, r.pos;
-`))
-	classCarTmpl = template.Must(template.New("q_class").Parse(`WITH ranked AS (
-  SELECT
-    ro.rally_id,
-    ro.user_id,
-    ro.user_name,
-    ro.time3,
-    cc.class_id,
-    ROW_NUMBER() OVER (
-        PARTITION BY ro.rally_id, cc.class_id
-        ORDER BY ro.time3
-    ) AS pos
-  FROM rally_overalls ro
-  JOIN cars       c  ON c.id = ro.car_id
-  JOIN class_cars cc ON cc.car_id = c.id
-{{ if .RallyFilter }} WHERE ro.rally_id = ? {{ end }}
-)
-SELECT rally_id, class_id, user_id, user_name, time3, pos
-FROM ranked
-ORDER BY rally_id, class_id, pos;
-`))
-)
+//go:embed sql_files/get_season_summary.sql
+var getSeasonSummarySQL string
 
-func GetSeasonSummaryQuery(config *configuration.Config) string {
-	var b strings.Builder
-	b.WriteString(`
-    SELECT
-      ro.user_name,
-      ro.nationality,
-      COUNT(DISTINCT ro.rally_id) AS rallies_started,
-      SUM(CASE CAST(ro.position AS INTEGER) WHEN 1 THEN 1 ELSE 0 END) AS rally_wins,
-      SUM(CASE WHEN CAST(ro.position AS INTEGER) <= 3 THEN 1 ELSE 0 END)  AS podiums,
-      MIN(CAST(ro.position AS INTEGER))                 AS best_position,
-      AVG(CAST(ro.position AS INTEGER))                 AS average_position,
+// GetSeasonSummaryQuery returns the SQL query to fetch the season summary.
+func GetSeasonSummary(store *Store, config *configuration.Config) ([]DriverSummary, error) {
+	var sums []DriverSummary
 
-      -- total super‑rallied stages
-      (SELECT COUNT(*)
-         FROM rally_stages rs
-        WHERE rs.user_name = ro.user_name
-          AND rs.super_rally = 1
-      )                                                 AS total_super_rallied_stages,
-
-      -- total stage wins
-      (SELECT COUNT(*)
-         FROM (
-           SELECT rs2.user_name
-             FROM rally_stages rs2
-             JOIN (
-               SELECT rally_id, stage_num, MIN(time3) AS min_time
-                 FROM rally_stages
-                GROUP BY rally_id, stage_num
-             ) AS sw
-               ON rs2.rally_id = sw.rally_id
-              AND rs2.stage_num = sw.stage_num
-              AND rs2.time3 = sw.min_time
-         ) AS winners
-        WHERE winners.user_name = ro.user_name
-      )                                                 AS stage_wins,
-
-      -- championship points per rally (adjust values as you prefer)
-      (SELECT SUM(
-         CASE CAST(ro2.position AS INTEGER)
-	`)
-
-	for i, points := range config.General.Points {
-		fmt.Fprintf(&b, "WHEN %d THEN %d ", i+1, points)
+	pnts, err := json.Marshal(config.General.Points)
+	if err != nil {
+		return sums, err
 	}
 
-	b.WriteString(`
-           ELSE 0
-         END
-       )
-       FROM rally_overalls ro2
-      WHERE ro2.user_name = ro.user_name
-      )                                                 AS total_championship_points
+	if err := store.DB.Raw(getSeasonSummarySQL, string(pnts)).Scan(&sums).Error; err != nil {
+		return sums, err
+	}
 
-    FROM rally_overalls ro
-    GROUP BY ro.user_name, ro.nationality
-    ORDER BY ro.user_name;
-    `)
+	sort.Slice(sums, func(i, j int) bool {
+		return sums[i].TotalChampionshipPoints > sums[j].TotalChampionshipPoints
+	})
 
-	return b.String()
+	return sums, nil
 }
 
-func DriverStagesQuery() string {
-	return `
-WITH 
-  -- 1) only real finishers (time3>0), compute total_time per stage
-  stage_totals AS (
-    SELECT
-      stage_num,
-      stage_name,
-      user_name,
-      time3 
-        + penalty 
-        + service_penalty  AS total_time,
-      penalty + service_penalty AS penalty,
-      comments
-    FROM rally_stages
-    WHERE rally_id   = :rally_id
-      AND time3      >  0                -- <<< filter out DNF’s
-  ),
+//go:embed sql_files/get_driver_stages.sql
+var getDriverStagesSQL string
 
-  -- 2) find the winning total_time per stage (among finishers)
-  min_totals AS (
-    SELECT
-      stage_num,
-      MIN(total_time) AS winner_time
-    FROM stage_totals
-    GROUP BY stage_num
-  ),
-
-  -- 3) rank every finisher on each stage
-  ranked AS (
-    SELECT
-      st.*,
-      ROW_NUMBER() OVER (
-        PARTITION BY stage_num
-        ORDER BY total_time ASC
-      ) AS position
-    FROM stage_totals st
-  )
-
--- 4) pull out just your driver, joining back the winner_time
-SELECT
-  r.stage_num,
-  r.stage_name,
-  r.position,
-  r.total_time       AS stage_time,
-  r.total_time - mt.winner_time  AS delta_to_winner,
-  r.penalty,
-  r.comments
-FROM ranked r
-JOIN min_totals mt  USING (stage_num)
-WHERE r.user_name = :user_name
-ORDER BY r.stage_num;
-`
+// GetDriverStages fetches the stages for drivers in a rally from the database.
+func GetDriverStages(store *Store, rallyId int64, userName string) ([]StageSummary, error) {
+	var stages []StageSummary
+	err := store.DB.Raw(getDriverStagesSQL, rallyId, userName).Find(&stages).Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch stages summary for %s: %w", userName, err)
+	}
+	return stages, nil
 }
 
-func FetchedRowsQuery(opts *QueryOpts) (string, error) {
-	var tmpl *template.Template
-	if opts.Type != nil && *opts.Type == DRIVER_CLASS {
-		tmpl = driverClassTmpl
+// GetRankedRows reads out the class points rows from the database for a
+// given rally ID and for the championship as a whole.
+func GetRankedRows(store *Store, opts *QueryOpts) ([]RankedRow, error) {
+	var rows []RankedRow
+	var err error
+
+	if opts.Type != nil {
+		if *opts.Type == DRIVER_CLASS {
+			rows, err = getDriverClassRankings(store, opts)
+		} else {
+			rows, err = getCarClassRankings(store, opts)
+		}
 	} else {
-		tmpl = classCarTmpl
+		return rows, fmt.Errorf("query type is not set")
 	}
 
-	type qtpl struct {
-		RallyFilter bool
+	return rows, err
+}
+
+//go:embed sql_files/get_car_class_rankings.sql
+var getCarClassRankingsSQL string
+
+func getCarClassRankings(store *Store, opts *QueryOpts) ([]RankedRow, error) {
+	var params any
+	if opts.RallyId != nil {
+		params = int64(*opts.RallyId)
+	} else {
+		params = sql.NullInt64{}
 	}
 
-	buf := &strings.Builder{}
+	var rankings []RankedRow
+	if err := store.DB.Raw(getCarClassRankingsSQL, params).Scan(&rankings).Error; err != nil {
+		return nil, err
+	}
 
-	err := tmpl.Execute(buf, qtpl{RallyFilter: opts.RallyId != nil})
+	return rankings, nil
+}
 
-	return buf.String(), err
+//go:embed sql_files/get_driver_class_rankings.sql
+var getDriverClassRankingsSQL string
+
+func getDriverClassRankings(store *Store, opts *QueryOpts) ([]RankedRow, error) {
+	var params any
+	if opts.RallyId != nil {
+		params = int64(*opts.RallyId)
+	} else {
+		params = sql.NullInt64{}
+	}
+
+	var rankings []RankedRow
+	if err := store.DB.Raw(getDriverClassRankingsSQL, params).Scan(&rankings).Error; err != nil {
+		return nil, err
+	}
+
+	return rankings, nil
 }

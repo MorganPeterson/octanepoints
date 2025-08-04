@@ -108,10 +108,10 @@ func main() {
 	if basicReport != 0 {
 		// Export the report to markdown file
 		if err := reports.ExportReport(basicReport, store, config); err != nil {
-			log.Fatalf("Failed to export report: %v", err)
+			log.Fatalf("Failed to export %d_points_summary_report: %v", basicReport, err)
 		}
 
-		fmt.Println("Report exported to report.md")
+		fmt.Printf("Report exported to %d_points_summary_report\n", basicReport)
 		return
 	}
 
@@ -119,9 +119,9 @@ func main() {
 	// championship so far, including driver points, averages, stage wins, etc.
 	if rallySummary {
 		if err := reports.ExportDriverSummaries(store, config); err != nil {
-			log.Fatalf("Failed to export driver summaries: %v", err)
+			log.Fatalf("Failed to export drivers_summary: %v", err)
 		}
-		fmt.Println("Driver summaries exported to driver_summaries.md")
+		fmt.Println("Championship summary exported to drivers_summary")
 		return
 	}
 
@@ -130,9 +130,9 @@ func main() {
 	// summary of the rally for each driver.
 	if driverSummaries != 0 {
 		if err := reports.DriverRallyReport(driverSummaries, store, config); err != nil {
-			log.Fatalf("Failed to export driver summary: %v", err)
+			log.Fatalf("Failed to export %d_driver_rally_summary: %v", driverSummaries, err)
 		}
-		fmt.Println("Driver summary exported to driver_summary.md")
+		fmt.Printf("Driver rally summary exported to %d_driver_rally_summary\n", driverSummaries)
 		return
 	}
 
@@ -140,9 +140,9 @@ func main() {
 	// and shows the points awarded to each class in the championship and that rally.
 	if classReport != 0 {
 		if err := reports.ExportClassReport(classReport, store, config); err != nil {
-			log.Fatalf("Failed to export class report: %v", err)
+			log.Fatalf("Failed to export %d_class_summary: %v", classReport, err)
 		}
-		fmt.Println("Class report exported to class_summaries.md")
+		fmt.Printf("Class report exported to %d_class_summary\n", classReport)
 		return
 	}
 }

@@ -73,7 +73,7 @@ func (s *Store) Migrate() error {
 		return fmt.Errorf("counting cars: %w", err)
 	}
 	if count == 0 {
-		if err := seedFromJSON(s.DB, "cars.json"); err != nil {
+		if err := seedCarsAndClasses(s.DB, "cars.json"); err != nil {
 			return fmt.Errorf("seeding cars: %w", err)
 		}
 	}
@@ -198,7 +198,7 @@ func seedClassesAndMembers(db *gorm.DB, config *configuration.Config) error {
 
 // seedFromJSON reads a JSON file and uses that data to seed the Cars and Class
 // related tables. It assumes the JSON structure matches the Cars model.
-func seedFromJSON(db *gorm.DB, path string) error {
+func seedCarsAndClasses(db *gorm.DB, path string) error {
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -227,7 +227,10 @@ func seedFromJSON(db *gorm.DB, path string) error {
 			return err
 		}
 		if carCount == 0 {
-			if err := tx.Create(&wrapper.Cars).Error; err != nil {
+			if err := tx.Clauses(clause.OnConflict{
+				Columns:   []clause.Column{{Name: "rsfid"}},
+				DoNothing: true,
+			}).Create(&wrapper.Cars).Error; err != nil {
 				return err
 			}
 		} else {

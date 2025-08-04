@@ -17,7 +17,6 @@ var summaryTmpl = template.Must(
 
 func ExportDriverSummaries(store *database.Store, config *configuration.Config) error {
 	var sums []database.DriverSummary
-
 	sums, err := database.GetSeasonSummary(store, config)
 	if err != nil {
 		return err

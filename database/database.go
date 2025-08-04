@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"time"
 
 	"git.sr.ht/~nullevoid/octanepoints/configuration"
@@ -47,16 +46,6 @@ func GetDriversRallySummary(store *Store, opts *QueryOpts) ([]RallyOverall, erro
 	return recs, nil
 }
 
-// GetDriverStages fetches the stages for drivers in a rally from the database.
-func GetDriverStages(store *Store, rallyId int64, userName string) ([]StageSummary, error) {
-	var stages []StageSummary
-	err := store.DB.Raw(DriverStagesQuery(), rallyId, userName).Find(&stages).Error
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch stages summary for %s: %w", userName, err)
-	}
-	return stages, nil
-}
-
 // GetRallyOverall fetches the overall results for a rally from the database table
 // rally_overalls. If the results are not found, it returns an error.
 func GetRallyOverall(store *Store, opts *QueryOpts) ([]RallyOverall, error) {
@@ -76,42 +65,6 @@ func GetRallyOverall(store *Store, opts *QueryOpts) ([]RallyOverall, error) {
 	}
 
 	return recs, nil
-}
-
-// GetRankedRows reads out the class points rows from the database for a
-// given rally ID and for the championship as a whole.
-func GetRankedRows(store *Store, opts *QueryOpts) ([]RankedRow, error) {
-	var rows []RankedRow
-
-	sql, err := FetchedRowsQuery(opts)
-	if err != nil {
-		return nil, err
-	}
-
-	var args []any
-	if opts.RallyId != nil {
-		args = append(args, *opts.RallyId)
-	}
-
-	if err := store.DB.Raw(sql, args...).Scan(&rows).Error; err != nil {
-		return nil, err
-	}
-	return rows, nil
-}
-
-// GetSeasonSummaryQuery returns the SQL query to fetch the season summary.
-func GetSeasonSummary(store *Store, config *configuration.Config) ([]DriverSummary, error) {
-	var sums []DriverSummary
-	sql := GetSeasonSummaryQuery(config)
-	if err := store.DB.Raw(sql).Scan(&sums).Error; err != nil {
-		return sums, err
-	}
-
-	sort.Slice(sums, func(i, j int) bool {
-		return sums[i].TotalChampionshipPoints > sums[j].TotalChampionshipPoints
-	})
-
-	return sums, nil
 }
 
 // GetRallyUserNames fetches the unique user names of drivers who participated

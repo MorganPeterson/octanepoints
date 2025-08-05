@@ -59,10 +59,14 @@ type Download struct {
 
 // Report maps the [report] section, embedding its subtables.
 type Report struct {
-	Directory string        `toml:"directory"` // "rally_reports"
-	Class     ReportClass   `toml:"class"`
-	Points    ReportPoints  `toml:"points"`
-	Drivers   ReportDrivers `toml:"drivers"`
+	Directory    string        `toml:"directory"`    // "rally_reports"
+	Format       string        `toml:"format"`       // "markdown" or "csv" or "both"
+	MdDirectory  string        `toml:"mdDirectory"`  // "markdown"
+	CsvDirectory string        `toml:"csvDirectory"` // "csv"
+	Delimiter    string        `toml:"delimiter"`    // ";"
+	Class        ReportClass   `toml:"class"`
+	Points       ReportPoints  `toml:"points"`
+	Drivers      ReportDrivers `toml:"drivers"`
 }
 
 type ReportClass struct {
@@ -107,6 +111,26 @@ func (c *Config) validate() error {
 	}
 	if c.Report.Directory == "" {
 		c.Report.Directory = defaultReportDir // Use default report directory if none specified
+	}
+
+	if c.Report.Format == "" {
+		c.Report.Format = "markdown" // Use markdown as default format
+	}
+	// Validate format is one of the supported options
+	if c.Report.Format != "markdown" && c.Report.Format != "csv" && c.Report.Format != "both" {
+		return fmt.Errorf("invalid report format '%s': must be 'markdown', 'csv', or 'both'", c.Report.Format)
+	}
+
+	if c.Report.MdDirectory == "" {
+		c.Report.MdDirectory = "markdown" // Use markdown as default directory
+	}
+
+	if c.Report.CsvDirectory == "" {
+		c.Report.CsvDirectory = "csv" // Use csv as default directory
+	}
+
+	if c.Report.Delimiter == "" {
+		c.Report.Delimiter = defaultDelimiter // Use default delimiter if none specified
 	}
 
 	if c.General.Directory == "" {

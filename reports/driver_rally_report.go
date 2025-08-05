@@ -68,6 +68,23 @@ func DriverRallyReport(rallyId int64, store *database.Store, config *configurati
 		return fmt.Errorf("Failed to get stages summary: %v", err)
 	}
 
+	// Export based on configured format
+	switch config.Report.Format {
+	case "markdown":
+		return exportDriverRallyMarkdown(rallyId, summaries, config)
+	case "csv":
+		return exportDriverRallyCSV(rallyId, summaries, config)
+	case "both":
+		if err := exportDriverRallyMarkdown(rallyId, summaries, config); err != nil {
+			return err
+		}
+		return exportDriverRallyCSV(rallyId, summaries, config)
+	default:
+		return fmt.Errorf("unsupported report format: %s", config.Report.Format)
+	}
+}
+
+func exportDriverRallyMarkdown(rallyId int64, summaries map[string]DriverReport, config *configuration.Config) error {
 	var buf bytes.Buffer
 	if err := driverSummary.Execute(&buf, summaries); err != nil {
 		return err
@@ -79,6 +96,61 @@ func DriverRallyReport(rallyId int64, store *database.Store, config *configurati
 		return err
 	}
 	return nil
+}
+
+func exportDriverRallyCSV(rallyId int64, summaries map[string]DriverReport, config *configuration.Config) error {
+	// Create CSV records
+	records := [][]string{}
+
+	// Header
+	records = append(records, []string{fmt.Sprintf("Rally %d - Driver Summaries", rallyId)})
+	records = append(records, []string{})
+
+	// For each driver
+	for driverName, report := range summaries {
+		records = append(records, []string{fmt.Sprintf("Driver: %s", driverName)})
+		records = append(records, []string{})
+
+		// Stages section
+		if len(report.Stages) > 0 {
+			records = append(records, []string{"Stage Results"})
+			records = append(records, []string{"Stage", "Time", "Position", "Delta to Winner", "Penalty", "Comments"})
+
+			for _, stage := range report.Stages {
+				records = append(records, []string{
+					stage.StageName,
+					fmt.Sprintf("%.3f", stage.StageTime),
+					fmt.Sprintf("%d", stage.Position),
+					fmt.Sprintf("%.3f", stage.DeltaToWinner),
+					fmt.Sprintf("%.0f", stage.Penalty),
+					stage.Comments,
+				})
+			}
+			records = append(records, []string{})
+		}
+
+		// Overall summary section
+		if len(report.Overall) > 0 {
+			records = append(records, []string{"Overall Summary"})
+			records = append(records, []string{"Metric", "Value", "Field Average", "Rank"})
+
+			for _, overall := range report.Overall {
+				records = append(records, []string{
+					overall.Metric,
+					overall.DriverValue,
+					overall.FieldAvg,
+					overall.RankText,
+				})
+			}
+		}
+		records = append(records, []string{})
+		records = append(records, []string{})
+	}
+
+	// create file name and write CSV
+	fileName := fmt.Sprintf("%d_%s.%s", rallyId, config.Report.Drivers.RallySummaryFilename, "csv")
+
+	return writeCSV(fileName, records, config)
 }
 
 func configSummaries(rallyId int64, store *database.Store) (DriverReportConfig, error) {

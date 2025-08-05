@@ -14,7 +14,8 @@ better or for worse. Use at your own risk.
 
 * Download and parse stage and overall result files (CSV) (semicolon separator)
 * Calculate points based on configurable scoring rules
-* Output standings in Markdown
+* Output standings in Markdown or CSV format
+* Support for both individual and combined report exports
 * Easy configuration via config file
 
 ## Prerequisites
@@ -146,6 +147,29 @@ description = "Silver Class Drivers"
 categories = ["Group R4", "Group N4"] # used if classType == "car"
 drivers = ["Amy Amatuer", "Niel Young", "Stever Silver"] # used if classType == "driver"
 ```
+
+### Report Format Configuration
+
+You can configure the output format for reports in the `[report]` section of your config file:
+
+```toml
+[report]
+directory = "rally_reports"
+format = "markdown" # Options: "markdown", "csv", "both"
+```
+
+**Format Options:**
+- `"markdown"` - Export reports as Markdown files only (default)
+- `"csv"` - Export reports as CSV files only
+- `"both"` - Export reports in both Markdown and CSV formats
+
+When using CSV format, all report types are supported:
+- Rally points summary (overall standings and championship points)
+- Class-specific reports with rally results and championship standings
+- Driver summaries with detailed statistics
+- Individual driver rally reports with stage results and overall metrics
+
+CSV files use the same naming convention as Markdown files but with `.csv` extension.
 
 ## Roadmap
 

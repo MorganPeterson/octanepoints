@@ -3,15 +3,14 @@ package reports
 import (
 	"bytes"
 	"embed"
+	"encoding/csv"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"text/template"
 
 	"git.sr.ht/~nullevoid/octanepoints/configuration"
 	"git.sr.ht/~nullevoid/octanepoints/parser"
-	"github.com/raykov/mdtopdf"
 )
 
 //go:embed templates/*.tmpl
@@ -26,22 +25,6 @@ var sharedFuncMap = template.FuncMap{
 }
 
 func add(a, b int) int { return a + b }
-
-func markdownToPdf(markdown string, pdfFile string) error {
-	md := strings.NewReader(markdown)
-
-	out, err := os.Create(pdfFile)
-	if err != nil {
-		return fmt.Errorf("creating PDF file: %w", err)
-	}
-	defer out.Close()
-
-	if err := mdtopdf.Convert(md, out); err != nil {
-		return fmt.Errorf("conversion failed: %v", err)
-	}
-
-	return nil
-}
 
 // pad right-spaces a string to width w
 func pad(s string, w int) string {
@@ -79,6 +62,7 @@ func writeMarkdown(filename string, data bytes.Buffer, config *configuration.Con
 		currentDir,
 		config.General.Directory,
 		config.Report.Directory,
+		config.Report.MdDirectory,
 		filename,
 	)
 	f, err := os.Create(reportPath)
@@ -89,6 +73,38 @@ func writeMarkdown(filename string, data bytes.Buffer, config *configuration.Con
 
 	if _, err := f.Write(data.Bytes()); err != nil {
 		return err
+	}
+
+	return nil
+}
+
+func writeCSV(filename string, records [][]string, config *configuration.Config) error {
+	// get current directory
+	currentDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("getting current directory: %w", err)
+	}
+	reportPath := filepath.Join(
+		currentDir,
+		config.General.Directory,
+		config.Report.Directory,
+		config.Report.CsvDirectory,
+		filename,
+	)
+	f, err := os.Create(reportPath)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	writer := csv.NewWriter(f)
+	writer.Comma = rune(config.Report.Delimiter[0])
+	defer writer.Flush()
+
+	for _, record := range records {
+		if err := writer.Write(record); err != nil {
+			return fmt.Errorf("writing CSV record: %w", err)
+		}
 	}
 
 	return nil

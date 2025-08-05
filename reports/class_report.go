@@ -96,12 +96,29 @@ func ExportClassReport(rallyID int64, store *database.Store, cfg *configuration.
 	allWithPts := applyPoints(allRanked, cfg.General.ClassPoints)
 	champ := buildChampionship(allWithPts, classLookup)
 
-	// 4) Render markdown
+	// 4) Export based on configured format
 	data := ClassReportData{
 		Rally:        rallySection,
 		Championship: champ,
 	}
 
+	// Export based on configured format
+	switch cfg.Report.Format {
+	case "markdown":
+		return exportClassMarkdown(rallyID, data, cfg)
+	case "csv":
+		return exportClassCSV(rallyID, data, cfg)
+	case "both":
+		if err := exportClassMarkdown(rallyID, data, cfg); err != nil {
+			return err
+		}
+		return exportClassCSV(rallyID, data, cfg)
+	default:
+		return fmt.Errorf("unsupported report format: %s", cfg.Report.Format)
+	}
+}
+
+func exportClassMarkdown(rallyID int64, data ClassReportData, cfg *configuration.Config) error {
 	var buf bytes.Buffer
 	if err := classReportTmpl.Execute(&buf, data); err != nil {
 		return err
@@ -114,6 +131,54 @@ func ExportClassReport(rallyID int64, store *database.Store, cfg *configuration.
 	}
 
 	return nil
+}
+
+func exportClassCSV(rallyID int64, data ClassReportData, cfg *configuration.Config) error {
+	// Create CSV records
+	records := [][]string{}
+
+	// Rally results section
+	records = append(records, []string{fmt.Sprintf("Rally %d - Class Results", rallyID)})
+
+	// For each class in the rally
+	for _, class := range data.Rally.Classes {
+		records = append(records, []string{}) // Empty line
+		records = append(records, []string{fmt.Sprintf("Class: %s", class.ClassName)})
+		records = append(records, []string{"Position", "Driver", "Time", "Points"})
+
+		for _, row := range class.Rows {
+			records = append(records, []string{
+				fmt.Sprintf("%d", row.Pos),
+				row.UserName,
+				row.Time3.String(),
+				fmt.Sprintf("%d", row.Points),
+			})
+		}
+	}
+
+	// Championship standings section
+	records = append(records, []string{}) // Empty line
+	records = append(records, []string{}) // Empty line
+	records = append(records, []string{"Championship Standings by Class"})
+
+	for _, champClass := range data.Championship {
+		records = append(records, []string{}) // Empty line
+		records = append(records, []string{fmt.Sprintf("Class: %s", champClass.ClassName)})
+		records = append(records, []string{"Position", "Driver", "Total Points"})
+
+		for _, row := range champClass.Rows {
+			records = append(records, []string{
+				fmt.Sprintf("%d", row.Pos),
+				row.UserName,
+				fmt.Sprintf("%d", row.TotalPoints),
+			})
+		}
+	}
+
+	// create file name and write CSV
+	fileName := fmt.Sprintf("%d_%s.%s", rallyID, cfg.Report.Class.SummaryFilename, "csv")
+
+	return writeCSV(fileName, records, cfg)
 }
 
 func applyPoints(ranked []database.RankedRow, scheme []int64) []ClassPointsRow {

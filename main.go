@@ -24,6 +24,7 @@ func main() {
 	var driverSummaries int64 // get a all driver summaries for a single rally
 	var grabData int64        // grab data for a rally and download it from rsf
 	var classReport int64     // get class points data for a single rally and overall
+	var allReports int64      // runs all above commands in one go
 
 	flag.Int64Var(&createRally, "create", 0, "put rally data in db with given ID number")
 	flag.Int64Var(&basicReport, "report", 0, "export rally points report for a single rally to markdown file")
@@ -31,6 +32,7 @@ func main() {
 	flag.Int64Var(&driverSummaries, "driver", 0, "export driver report for a single rally to markdown file")
 	flag.Int64Var(&grabData, "grab", 0, "grab raw rally data from RSF with given rally ID number")
 	flag.Int64Var(&classReport, "class", 0, "export class points report for a single rally to markdown file")
+	flag.Int64Var(&allReports, "all", 0, "run all commands for a single rally in one go")
 
 	flag.Parse()
 
@@ -53,7 +55,17 @@ func main() {
 
 	err = ensureDir(reportDir)
 	if err != nil {
-		log.Fatalf("Failed to ensure description directory exists: %v", err)
+		log.Fatalf("Failed to ensure report base directory exists: %v", err)
+	}
+
+	err = ensureDir(filepath.Join(reportDir, config.Report.MdDirectory))
+	if err != nil {
+		log.Fatalf("Failed to ensure report markdown directory exists: %v", err)
+	}
+
+	err = ensureDir(filepath.Join(reportDir, config.Report.CsvDirectory))
+	if err != nil {
+		log.Fatalf("Failed to ensure report csv directory exists: %v", err)
 	}
 
 	err = ensureDir(databaseDir)
@@ -90,6 +102,42 @@ func main() {
 		log.Fatalf("Failed to initialize database store: %v", err)
 	}
 	defer store.Close()
+
+	// If all reports are requested we do all of the above commands in one go.
+	if allReports != 0 {
+		// If all reports are requested, we run the grab command first
+		if err := grab.Grab(context.Background(), allReports, config); err != nil {
+			log.Fatalf("Failed to grab rally data for all reports: %v", err)
+		}
+		log.Printf("Rally %d setup successfully.\n", allReports)
+
+		if err := database.CreateRally(allReports, config, store); err != nil {
+			log.Fatalf("Failed to create rally: %v", err)
+		}
+		log.Printf("Rally %d created successfully.\n", allReports)
+
+		if err := reports.ExportReport(allReports, store, config); err != nil {
+			log.Fatalf("Failed to export %d_points_summary_report: %v", allReports, err)
+		}
+		log.Printf("Report exported to %d_points_summary_report\n", allReports)
+
+		if err := reports.ExportDriverSummaries(store, config); err != nil {
+			log.Fatalf("Failed to export drivers_summary: %v", err)
+		}
+		log.Println("Championship summary exported to drivers_summary")
+
+		if err := reports.DriverRallyReport(allReports, store, config); err != nil {
+			log.Fatalf("Failed to export %d_driver_rally_summary: %v", allReports, err)
+		}
+		log.Printf("Driver rally summary exported to %d_driver_rally_summary\n", allReports)
+
+		if err := reports.ExportClassReport(allReports, store, config); err != nil {
+			log.Fatalf("Failed to export %d_class_summary: %v", allReports, err)
+		}
+		log.Printf("Class report exported to %d_class_summary\n", allReports)
+
+		return
+	}
 
 	// Given a rally ID number, we read the raw csv data for a rally from the
 	// rallies/[rally_id] directory and put it into the database.

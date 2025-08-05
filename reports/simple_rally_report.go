@@ -53,6 +53,23 @@ func ExportReport(rallyId int64, store *database.Store, config *configuration.Co
 		Championship: standings,
 	}
 
+	// Export based on configured format
+	switch config.Report.Format {
+	case "markdown":
+		return exportMarkdown(rallyId, data, config)
+	case "csv":
+		return exportCSV(rallyId, data, config)
+	case "both":
+		if err := exportMarkdown(rallyId, data, config); err != nil {
+			return err
+		}
+		return exportCSV(rallyId, data, config)
+	default:
+		return fmt.Errorf("unsupported report format: %s", config.Report.Format)
+	}
+}
+
+func exportMarkdown(rallyId int64, data ReportData, config *configuration.Config) error {
 	var buf bytes.Buffer
 	if err := reportTmpl.Execute(&buf, data); err != nil {
 		return err
@@ -66,6 +83,52 @@ func ExportReport(rallyId int64, store *database.Store, config *configuration.Co
 	}
 
 	return nil
+}
+
+func exportCSV(rallyId int64, data ReportData, config *configuration.Config) error {
+	// Create CSV records
+	rallyResults := [][]string{}
+
+	// Rally results header
+	rallyResults = append(rallyResults, []string{"Rally Id", "Position", "Driver", "Car", "Time", "Points"})
+
+	// Rally results data
+	for i, record := range data.Rally {
+		position := fmt.Sprintf("%d", i+1)
+		rallyResults = append(rallyResults, []string{
+			strconv.FormatInt(rallyId, 10),
+			position,
+			record.Raw.UserName,
+			record.Raw.Car,
+			record.Raw.Time3.String(),
+			fmt.Sprintf("%d", record.Points),
+		})
+	}
+
+	err := writeCSV(fmt.Sprintf("%d_%s.%s", rallyId, "rally_overall_points", "csv"), rallyResults, config)
+	if err != nil {
+		return fmt.Errorf("Failed to write CSV: %v", err)
+	}
+
+	overallChampionship := [][]string{}
+	// Championship standings header
+	overallChampionship = append(overallChampionship, []string{"Rally Id", "Position", "Driver", "Total Points"})
+
+	// Championship standings data
+	for i, standing := range data.Championship {
+		position := fmt.Sprintf("%d", i+1)
+		overallChampionship = append(overallChampionship, []string{
+			fmt.Sprintf("%d", rallyId),
+			position,
+			standing.UserName,
+			fmt.Sprintf("%d", standing.Points),
+		})
+	}
+
+	// create file name and write CSV
+	fileName := fmt.Sprintf("%d_%s.%s", rallyId, "championship_standings", "csv")
+
+	return writeCSV(fileName, overallChampionship, config)
 }
 
 // assignPointsOverall assigns points to each record based on the configured points system.

@@ -206,6 +206,7 @@ func prepare(id int64, config *configuration.Config) (Paths, error) {
 	p.Dir = filepath.Clean(
 		filepath.Join(
 			currentDir,
+			config.General.Directory,
 			config.Download.Directory,
 			fmt.Sprintf("%d", p.Id)))
 	if err := os.MkdirAll(p.Dir, 0o755); err != nil {

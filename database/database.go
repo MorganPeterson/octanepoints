@@ -244,7 +244,7 @@ func setRally(rallyId int64, store *Store, config *configuration.Config) error {
 func setStages(rallyId int64, store *Store, config *configuration.Config) error {
 	csvPath := filepath.Join(
 		fmt.Sprintf("%d", rallyId),
-		fmt.Sprintf("%d_%s", rallyId, config.Download.StageFileName),
+		fmt.Sprintf("%d%s", rallyId, config.Download.StageFileName),
 	)
 	r, err := fetchCsv(csvPath, config)
 	if err != nil {

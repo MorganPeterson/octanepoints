@@ -113,13 +113,14 @@ func createDirs(config *configuration.Config) error {
 		config.General.Directory,
 		config.Download.Directory,
 		config.Database.Directory,
-		filepath.Join(config.Report.Directory, config.Download.Directory),
-		filepath.Join(config.Report.Directory, config.Report.Directory),
+		config.Report.Directory,
+		filepath.Join(config.Report.Directory, config.Report.MdDirectory),
+		filepath.Join(config.Report.Directory, config.Report.CsvDirectory),
 	}
 
 	err := ensureDirs(baseDirs)
 	if err != nil {
-		return fmt.Errorf("Failed to ensure general directory exists: %v", err)
+		return fmt.Errorf("failed to ensure general directory exists: %v", err)
 	}
 
 	return nil

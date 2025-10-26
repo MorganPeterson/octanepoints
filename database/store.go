@@ -3,7 +3,6 @@ package database
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -13,6 +12,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
+
+	_ "modernc.org/sqlite"
 )
 
 type CarsWrapper struct {
@@ -29,7 +30,10 @@ type Store struct {
 func NewStore(path string) (*Store, error) {
 	// Open with a bit of GORM logging enabled; adjust logger level if needed.
 	gormDB, err := gorm.Open(
-		sqlite.Open(path+"?_foreign_keys=on"),
+		sqlite.Dialector{
+			DSN:        path + "?_foreign_keys=on",
+			DriverName: "sqlite",
+		},
 		&gorm.Config{
 			Logger: logger.Default.LogMode(logger.Silent),
 		},
@@ -175,7 +179,6 @@ func seedClassesAndMembers(db *gorm.DB, config *configuration.Config) error {
 					Where("user_name = ?", uname).
 					Order("rally_id DESC").
 					First(&ro).Error; err != nil {
-					log.Printf("skipping unknown driver %q", uname)
 					continue // skip if unknown driver
 				}
 				drvJoins = append(drvJoins, ClassDriver{
@@ -228,7 +231,7 @@ func seedCarsAndClasses(db *gorm.DB, path string) error {
 		}
 		if carCount == 0 {
 			if err := tx.Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "rsfid"}},
+				Columns:   []clause.Column{{Name: "rsf_id"}},
 				DoNothing: true,
 			}).Create(&wrapper.Cars).Error; err != nil {
 				return err
@@ -238,7 +241,7 @@ func seedCarsAndClasses(db *gorm.DB, path string) error {
 			for i := range wrapper.Cars {
 				// var id int64
 				var car Cars
-				if err := tx.Where("rsfid = ?", wrapper.Cars[i].RSFID).First(&car).Error; err != nil {
+				if err := tx.Where("rsf_id = ?", wrapper.Cars[i].RSFID).First(&car).Error; err != nil {
 					return err
 				}
 				wrapper.Cars[i].ID = car.ID

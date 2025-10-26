@@ -140,17 +140,17 @@ func doAllReports(store *database.Store, config *configuration.Config, rallyId *
 	if err := grab.Grab(context.Background(), rid, config); err != nil {
 		log.Fatalf("Failed to grab rally data for all reports: %v", err)
 	}
-	log.Printf("Rally %d downloaded successfully.\n", allReports)
+	log.Printf("Rally %d downloaded successfully.\n", rid)
 
 	if err := database.CreateRally(rid, config, store); err != nil {
 		log.Fatalf("Failed to create rally: %v", err)
 	}
-	log.Printf("Rally %d created successfully.\n", allReports)
+	log.Printf("Rally %d created successfully.\n", rid)
 
 	if err := reports.ExportReport(rid, store, config); err != nil {
-		log.Fatalf("Failed to export %d_points_summary_report: %v", allReports, err)
+		log.Fatalf("Failed to export %d_points_summary_report: %v", rid, err)
 	}
-	log.Printf("Report exported to %d_points_summary_report\n", allReports)
+	log.Printf("Report exported to %d_points_summary_report\n", rid)
 
 	if err := reports.ExportDriverSummaries(store, config); err != nil {
 		log.Fatalf("Failed to export drivers_summary: %v", err)
@@ -158,14 +158,14 @@ func doAllReports(store *database.Store, config *configuration.Config, rallyId *
 	log.Println("Championship summary exported to drivers_summary")
 
 	if err := reports.DriverRallyReport(rid, store, config); err != nil {
-		log.Fatalf("Failed to export %d_driver_rally_summary: %v", allReports, err)
+		log.Fatalf("Failed to export %d_driver_rally_summary: %v", rid, err)
 	}
-	log.Printf("Driver rally summary exported to %d_driver_rally_summary\n", allReports)
+	log.Printf("Driver rally summary exported to %d_driver_rally_summary\n", rid)
 
 	if err := reports.ExportClassReport(rid, store, config); err != nil {
-		log.Fatalf("Failed to export %d_class_summary: %v", allReports, err)
+		log.Fatalf("Failed to export %d_class_summary: %v", rid, err)
 	}
-	log.Printf("Class report exported to %d_class_summary\n", allReports)
+	log.Printf("Class report exported to %d_class_summary\n", rid)
 }
 
 // doCreateRally Given a rally ID number, we read the raw csv data for a rally from the

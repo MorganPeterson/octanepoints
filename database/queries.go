@@ -5,6 +5,7 @@ import (
 	"embed"
 	"fmt"
 	"sort"
+	"strings"
 
 	"git.sr.ht/~nullevoid/octanepoints/configuration"
 	"github.com/goccy/go-json"
@@ -24,7 +25,7 @@ func GetSeasonSummary(store *Store, config *configuration.Config) ([]DriverSumma
 		return sums, err
 	}
 
-	if err := store.DB.Raw(getSeasonSummarySQL, string(pnts)).Scan(&sums).Error; err != nil {
+	if err := store.DB.Raw(CleanSQL(getSeasonSummarySQL), string(pnts)).Scan(&sums).Error; err != nil {
 		return sums, err
 	}
 
@@ -41,7 +42,7 @@ var getDriverStagesSQL string
 // GetDriverStages fetches the stages for drivers in a rally from the database.
 func GetDriverStages(store *Store, rallyId int64, userName string) ([]StageSummary, error) {
 	var stages []StageSummary
-	err := store.DB.Raw(getDriverStagesSQL, rallyId, userName).Find(&stages).Error
+	err := store.DB.Raw(CleanSQL(getDriverStagesSQL), rallyId, userName).Find(&stages).Error
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch stages summary for %s: %w", userName, err)
 	}
@@ -67,6 +68,12 @@ func GetRankedRows(store *Store, opts *QueryOpts) ([]RankedRow, error) {
 	return rows, err
 }
 
+func CleanSQL(query string) string {
+	q := strings.TrimSpace(query)
+	q = strings.TrimRight(q, " \t\r\n;")
+	return q
+}
+
 //go:embed sql_files/get_car_class_rankings.sql
 var getCarClassRankingsSQL string
 
@@ -79,7 +86,7 @@ func getCarClassRankings(store *Store, opts *QueryOpts) ([]RankedRow, error) {
 	}
 
 	var rankings []RankedRow
-	if err := store.DB.Raw(getCarClassRankingsSQL, params).Scan(&rankings).Error; err != nil {
+	if err := store.DB.Raw(CleanSQL(getCarClassRankingsSQL), params).Scan(&rankings).Error; err != nil {
 		return nil, err
 	}
 
@@ -90,15 +97,15 @@ func getCarClassRankings(store *Store, opts *QueryOpts) ([]RankedRow, error) {
 var getDriverClassRankingsSQL string
 
 func getDriverClassRankings(store *Store, opts *QueryOpts) ([]RankedRow, error) {
-	var params any
+	var rallId *int64 = nil
 	if opts.RallyId != nil {
-		params = int64(*opts.RallyId)
+		rallId = opts.RallyId
 	} else {
-		params = sql.NullInt64{}
+		rallId = nil
 	}
 
 	var rankings []RankedRow
-	if err := store.DB.Raw(getDriverClassRankingsSQL, params).Scan(&rankings).Error; err != nil {
+	if err := store.DB.Raw(CleanSQL(getDriverClassRankingsSQL), rallId).Scan(&rankings).Error; err != nil {
 		return nil, err
 	}
 

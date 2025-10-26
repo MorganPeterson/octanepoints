@@ -4,16 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"time"
+	"path/filepath"
 
 	"git.sr.ht/~nullevoid/octanepoints/configuration"
 	"git.sr.ht/~nullevoid/octanepoints/parser"
-	"gorm.io/driver/sqlite"
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
-
-	_ "modernc.org/sqlite"
 )
 
 type CarsWrapper struct {
@@ -29,11 +27,9 @@ type Store struct {
 // connection settings, and runs migrations.
 func NewStore(path string) (*Store, error) {
 	// Open with a bit of GORM logging enabled; adjust logger level if needed.
+	p := filepath.ToSlash(path)
 	gormDB, err := gorm.Open(
-		sqlite.Dialector{
-			DSN:        path + "?_foreign_keys=on",
-			DriverName: "sqlite",
-		},
+		sqlite.Open("file:"+p+"?cache=shared&mode=rwc&_pragma=foreign_keys(1)&_pragma=busy_timeout(5000)"),
 		&gorm.Config{
 			Logger: logger.Default.LogMode(logger.Silent),
 		},
@@ -48,7 +44,7 @@ func NewStore(path string) (*Store, error) {
 		return nil, fmt.Errorf("getting sql.DB from gorm: %w", err)
 	}
 	sqlDB.SetMaxOpenConns(1)
-	sqlDB.SetConnMaxLifetime(time.Minute)
+	sqlDB.SetMaxIdleConns(1)
 
 	store := &Store{DB: gormDB}
 	if err := store.Migrate(); err != nil {
@@ -142,9 +138,7 @@ func seedClassesAndMembers(db *gorm.DB, config *configuration.Config) error {
 		var catJoins []ClassCar
 		categories := []string{}
 		for _, c := range config.Classes {
-			for _, cat := range c.Categories {
-				categories = append(categories, cat) // collect unique categories
-			}
+			categories = append(categories, c.Categories...) // collect categories
 		}
 
 		// find all cars in that category
@@ -249,10 +243,6 @@ func seedCarsAndClasses(db *gorm.DB, path string) error {
 		}
 
 		// 2) Build distinct classes from car.Category
-		type tmpClass struct {
-			Name string
-			Slug string
-		}
 		seen := map[string]struct{}{}
 		classesToInsert := make([]Class, 0)
 		for _, car := range wrapper.Cars {

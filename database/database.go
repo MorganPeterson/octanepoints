@@ -16,17 +16,17 @@ import (
 // overall results, and stages based on the provided rally ID and configuration.
 func CreateRally(rallyId int64, config *configuration.Config, store *Store) error {
 	if err := setRally(rallyId, store, config); err != nil {
-		return fmt.Errorf("Failed to store rally: %w", err)
+		return fmt.Errorf("failed to store rally: %w", err)
 	}
 
 	err := setOverall(rallyId, store, config)
 	if err != nil {
-		return fmt.Errorf("Failed to store overall rally data: %w", err)
+		return fmt.Errorf("failed to store overall rally data: %w", err)
 	}
 
 	err = setStages(rallyId, store, config)
 	if err != nil {
-		return fmt.Errorf("Failed to store rally stage data: %w", err)
+		return fmt.Errorf("failed to store rally stage data: %w", err)
 	}
 
 	return nil

@@ -11,7 +11,7 @@ WITH
       penalty + service_penalty AS penalty,
       comments
     FROM rally_stages
-    WHERE rally_id   = :rally_id
+    WHERE rally_id   = ?1 
       AND time3      >  0                -- <<< filter out DNF’s
   ),
 
@@ -46,5 +46,5 @@ SELECT
   r.comments
 FROM ranked r
 JOIN min_totals mt  USING (stage_num)
-WHERE r.user_name = :user_name
-ORDER BY r.stage_num;
+WHERE r.user_name = ?2
+ORDER BY r.stage_num

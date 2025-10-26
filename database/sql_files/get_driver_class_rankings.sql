@@ -7,10 +7,7 @@ WITH driver_classes AS (
     cd.class_id
   FROM rally_overalls ro
   JOIN class_drivers cd ON cd.user_id = ro.user_id
-
-  -- this single WHERE does “no filter” when ? IS NULL,
-  -- or “only rally = ?” when you pass a number
-  WHERE ro.rally_id = COALESCE(?, ro.rally_id)
+  WHERE (?1 IS NULL) OR (ro.rally_id = ?1)
 ),
 ranked AS (
   SELECT
@@ -18,7 +15,6 @@ ranked AS (
     ROW_NUMBER() OVER (PARTITION BY dc.rally_id, dc.class_id ORDER BY dc.time3) AS pos
   FROM driver_classes dc
 )
-
 SELECT
   r.rally_id,
   r.class_id,
@@ -26,5 +22,4 @@ SELECT
   r.user_name,
   r.pos
 FROM ranked r
-ORDER BY r.rally_id, r.class_id, r.pos;
-
+ORDER BY r.rally_id, r.class_id, r.pos

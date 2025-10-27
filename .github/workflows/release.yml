@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    env:
+      APP_NAME: octanepoints
+      MAIN_PKG: ./cmd/octanepoints
+      OS_LIST: "linux windows darwin freebsd openbsd netbsd"
+      ARCH_LIST: "amd64 arm64"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"      # or your version
+
+      - name: Install packaging tools
+        run: sudo apt-get update && sudo apt-get install -y zip
+
+      - name: Build all targets
+        shell: bash
+        run: |
+          set -euxo pipefail
+          VERSION="${GITHUB_REF_NAME}"     # e.g. v1.2.3
+          mkdir -p dist
+
+          for GOOS in $OS_LIST; do
+            for GOARCH in $ARCH_LIST; do
+              EXT=""
+              PKG_CMD="tar -czf"       # default to .tar.gz
+              OUT="${APP_NAME}_${VERSION}_${GOOS}_${GOARCH}"
+              BIN="${APP_NAME}"
+              if [ "$GOOS" = "windows" ]; then
+                EXT=".exe"
+                PKG_CMD="zip -j"       # Windows users prefer .zip
+              fi
+
+              # Build (pure Go cross-compile)
+              CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH \
+                go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" \
+                -o "dist/${BIN}${EXT}" "${MAIN_PKG}"
+
+              # Package
+              pushd dist >/dev/null
+              if [ "$GOOS" = "windows" ]; then
+                $PKG_CMD "${OUT}.zip" "${BIN}${EXT}"
+              else
+                $PKG_CMD "${OUT}.tar.gz" "${BIN}${EXT}"
+              fi
+              # Checksums
+              if command -v shasum >/dev/null 2>&1; then
+                shasum -a 256 "${OUT}.zip" 2>/dev/null || true
+                shasum -a 256 "${OUT}.tar.gz" 2>/dev/null || true
+              else
+                sha256sum "${OUT}.zip" 2>/dev/null || true
+                sha256sum "${OUT}.tar.gz" 2>/dev/null || true
+              fi > "${OUT}.sha256" || true
+              # Clean the raw binary after packaging
+              rm -f "${BIN}${EXT}"
+              popd >/dev/null
+            done
+          done
+
+      - name: Create GitHub Release & upload artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.sha256

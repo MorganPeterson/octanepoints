@@ -12,7 +12,7 @@ jobs:
     env:
       APP_NAME: octanepoints
       MAIN_PKG: ./cmd/octanepoints
-      OS_LIST: "linux windows darwin freebsd openbsd netbsd"
+      OS_LIST: "linux windows darwin"
       ARCH_LIST: "amd64 arm64"
 
     steps:

@@ -3,17 +3,17 @@ name: Release
 on:
   push:
     tags:
-      - "v*"     # pushes like v0.1.0 trigger a release
+      - "v*"
 
 permissions:
-  contents: write   # needed to create/upload releases
+  contents: write
 
 jobs:
   build-and-release:
     runs-on: ubuntu-latest
     env:
-      APP_NAME: myapp           # CHANGE: your binary name
-      MAIN_PKG: ./cmd/myapp     # CHANGE: your main package
+      APP_NAME: octanepoints
+      MAIN_PKG: ./cmd/octanepoints
       OS_LIST: "linux windows darwin freebsd openbsd netbsd"
       ARCH_LIST: "amd64 arm64"
 
@@ -22,54 +22,56 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23"    # or your version
+          go-version: "1.25"      # or your version
 
-      - name: Tools
+      - name: Install packaging tools
         run: sudo apt-get update && sudo apt-get install -y zip
 
-      - name: Build, package, checksum
+      - name: Build all targets
         shell: bash
         run: |
-          set -euo pipefail
-          VERSION="${GITHUB_REF_NAME}"   # e.g. v0.1.0
+          set -euxo pipefail
+          VERSION="${GITHUB_REF_NAME}"     # e.g. v1.2.3
           mkdir -p dist
 
           for GOOS in $OS_LIST; do
             for GOARCH in $ARCH_LIST; do
               EXT=""
-              PKG="tar -czf"
+              PKG_CMD="tar -czf"       # default to .tar.gz
               OUT="${APP_NAME}_${VERSION}_${GOOS}_${GOARCH}"
               BIN="${APP_NAME}"
-
               if [ "$GOOS" = "windows" ]; then
                 EXT=".exe"
-                PKG="zip -j"
+                PKG_CMD="zip -j"       # Windows users prefer .zip
               fi
 
+              # Build (pure Go cross-compile)
               CGO_ENABLED=0 GOOS=$GOOS GOARCH=$GOARCH \
                 go build -trimpath -ldflags "-s -w -X main.version=${VERSION}" \
                 -o "dist/${BIN}${EXT}" "${MAIN_PKG}"
 
+              # Package
               pushd dist >/dev/null
               if [ "$GOOS" = "windows" ]; then
-                $PKG "${OUT}.zip" "${BIN}${EXT}"
+                $PKG_CMD "${OUT}.zip" "${BIN}${EXT}"
               else
-                $PKG "${OUT}.tar.gz" "${BIN}${EXT}"
+                $PKG_CMD "${OUT}.tar.gz" "${BIN}${EXT}"
               fi
-
-              # checksum file alongside each archive
-              if [ -f "${OUT}.zip" ]; then
-                sha256sum "${OUT}.zip" > "${OUT}.sha256"
+              # Checksums
+              if command -v shasum >/dev/null 2>&1; then
+                shasum -a 256 "${OUT}.zip" 2>/dev/null || true
+                shasum -a 256 "${OUT}.tar.gz" 2>/dev/null || true
               else
-                sha256sum "${OUT}.tar.gz" > "${OUT}.sha256"
-              fi
-
+                sha256sum "${OUT}.zip" 2>/dev/null || true
+                sha256sum "${OUT}.tar.gz" 2>/dev/null || true
+              fi > "${OUT}.sha256" || true
+              # Clean the raw binary after packaging
               rm -f "${BIN}${EXT}"
               popd >/dev/null
             done
           done
 
-      - name: Create release & upload artifacts
+      - name: Create GitHub Release & upload artifacts
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}

@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       APP_NAME: octanepoints
-      MAIN_PKG: ./cmd/octanepoints
+      MAIN_PKG: ./
       OS_LIST: "linux windows darwin freebsd openbsd netbsd"
       ARCH_LIST: "amd64 arm64"
 

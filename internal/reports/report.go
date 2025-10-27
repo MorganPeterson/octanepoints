@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"git.sr.ht/~nullevoid/octanepoints/configuration"
-	"git.sr.ht/~nullevoid/octanepoints/parser"
+	"github.com/MorganPeterson/octanepoints/internal/configuration"
+	"github.com/MorganPeterson/octanepoints/internal/parser"
 )
 
 //go:embed templates/*.tmpl

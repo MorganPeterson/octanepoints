@@ -7,8 +7,8 @@ import (
 	"text/template"
 	"time"
 
-	"git.sr.ht/~nullevoid/octanepoints/configuration"
-	"git.sr.ht/~nullevoid/octanepoints/database"
+	"github.com/MorganPeterson/octanepoints/internal/configuration"
+	"github.com/MorganPeterson/octanepoints/internal/database"
 )
 
 var classReportTmpl = template.Must(

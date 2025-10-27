@@ -15,8 +15,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"git.sr.ht/~nullevoid/octanepoints/configuration"
 	"github.com/BurntSushi/toml"
+	"github.com/MorganPeterson/octanepoints/internal/configuration"
 )
 
 type Paths struct {

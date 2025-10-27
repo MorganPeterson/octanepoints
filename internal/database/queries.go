@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"git.sr.ht/~nullevoid/octanepoints/configuration"
+	"github.com/MorganPeterson/octanepoints/internal/configuration"
 	"github.com/goccy/go-json"
 )
 

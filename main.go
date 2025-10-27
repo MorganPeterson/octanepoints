@@ -8,10 +8,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"git.sr.ht/~nullevoid/octanepoints/configuration"
-	"git.sr.ht/~nullevoid/octanepoints/database"
-	"git.sr.ht/~nullevoid/octanepoints/grab"
-	"git.sr.ht/~nullevoid/octanepoints/reports"
+	"github.com/MorganPeterson/octanepoints/internal/configuration"
+	"github.com/MorganPeterson/octanepoints/internal/database"
+	"github.com/MorganPeterson/octanepoints/internal/grab"
+	"github.com/MorganPeterson/octanepoints/internal/reports"
 )
 
 const configPath string = "config.toml" // Path to the configuration file

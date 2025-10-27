@@ -1,4 +1,4 @@
-module git.sr.ht/~nullevoid/octanepoints
+module github.com/MorganPeterson/octanepoints
 
 go 1.24.5
 
